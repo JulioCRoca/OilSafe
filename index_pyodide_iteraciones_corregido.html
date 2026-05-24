@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iteraciones con Pyodide - Ducha eléctrica termostática</title>
+
+  <!-- Pyodide: Python ejecutándose dentro del navegador -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent2: #22c55e;
+      --danger: #ef4444;
+      --border: #374151;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0%, #020617 60%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 32px 20px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 3rem);
+      color: #f8fafc;
+    }
+
+    header p {
+      max-width: 920px;
+      margin: 12px auto 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    main {
+      width: min(1280px, 96%);
+      margin: 0 auto 40px;
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.93);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+
+    .card-title {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(31, 41, 55, 0.65);
+    }
+
+    .card-title h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .card-title small {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .card-content {
+      padding: 20px;
+    }
+
+    .grid-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    label {
+      font-size: 0.86rem;
+      color: #cbd5e1;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 11px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #020617;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px 16px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0284c7, #22c55e);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: transform .15s ease, opacity .15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.94;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #020617;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .status.ok {
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.45);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .status.error {
+      color: #fecaca;
+      border-color: rgba(239, 68, 68, 0.55);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .formula {
+      background: #020617;
+      color: #dbeafe;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      line-height: 1.65;
+      overflow-x: auto;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .metric {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+    }
+
+    .metric strong {
+      font-size: 1.12rem;
+      color: #f8fafc;
+    }
+
+    .metric.good strong {
+      color: #86efac;
+    }
+
+    .metric.warn strong {
+      color: #fbbf24;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 940px;
+      background: #020617;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1f2937;
+      text-align: right;
+      white-space: nowrap;
+      font-size: 0.88rem;
+    }
+
+    th {
+      color: #bfdbfe;
+      background: #111827;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td:first-child,
+    th:first-child {
+      text-align: center;
+    }
+
+    tr:hover td {
+      background: rgba(56, 189, 248, 0.055);
+    }
+
+    .section-title {
+      margin: 22px 0 10px;
+      font-size: 1.05rem;
+      color: #f8fafc;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+      margin-top: 10px;
+    }
+
+    code {
+      color: #93c5fd;
+    }
+
+    @media (max-width: 1050px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .grid-form {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Iteraciones con Python dentro del navegador</h1>
+    <p>
+      Este ejemplo usa <strong>Pyodide</strong> para ejecutar Python en una página estática.
+      El tema elegido es una <strong>ducha eléctrica termostática</strong>: se calcula la temperatura
+      de salida resolviendo una ecuación no lineal de balance térmico mediante Newton-Raphson.
+    </p>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="card-title">
+        <h2>Datos de entrada</h2>
+        <small>Modifica los valores y presiona calcular. Todo se ejecuta localmente en tu navegador.</small>
+      </div>
+
+      <div class="card-content">
+        <div class="grid-form">
+          <div>
+            <label for="tin">Temperatura de entrada Tin [°C]</label>
+            <input id="tin" type="number" step="0.1" value="22" />
+          </div>
+
+          <div>
+            <label for="tamb">Temperatura ambiente Tamb [°C]</label>
+            <input id="tamb" type="number" step="0.1" value="25" />
+          </div>
+
+          <div>
+            <label for="flow">Caudal [L/min]</label>
+            <input id="flow" type="number" step="0.1" value="3.5" />
+          </div>
+
+          <div>
+            <label for="power">Potencia máxima [W]</label>
+            <input id="power" type="number" step="50" value="5500" />
+          </div>
+
+          <div>
+            <label for="duty">Porcentaje de activación [%]</label>
+            <input id="duty" type="number" step="1" value="80" />
+          </div>
+
+          <div>
+            <label for="eta0">Eficiencia nominal η₀</label>
+            <input id="eta0" type="number" step="0.01" value="0.92" />
+          </div>
+
+          <div>
+            <label for="u">Coef. global U [W/m²K]</label>
+            <input id="u" type="number" step="0.1" value="11" />
+          </div>
+
+          <div>
+            <label for="area">Área térmica A [m²]</label>
+            <input id="area" type="number" step="0.01" value="0.18" />
+          </div>
+
+          <div>
+            <label for="emiss">Emisividad ε</label>
+            <input id="emiss" type="number" step="0.01" value="0.82" />
+          </div>
+
+          <div>
+            <label for="guess">Suposición inicial T₀ [°C]</label>
+            <input id="guess" type="number" step="0.1" value="42" />
+          </div>
+
+          <div>
+            <label for="maxiter">Máx. iteraciones</label>
+            <input id="maxiter" type="number" step="1" value="18" />
+          </div>
+
+          <div>
+            <label for="tol">Tolerancia [°C]</label>
+            <input id="tol" type="number" step="0.000001" value="0.00001" />
+          </div>
+
+          <div class="full">
+            <button id="btnCalcular" disabled>Cargando Pyodide...</button>
+            <div id="status" class="status">Inicializando Python en el navegador...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">
+        <h2>Resultados</h2>
+        <small>La tabla principal se genera desde Python y se renderiza con JavaScript.</small>
+      </div>
+
+      <div class="card-content">
+        <div class="formula">
+Balance no lineal resuelto por Newton-Raphson:<br><br>
+F(T) = ρ·Q·cp·(T − Tin) + U·A·(T − Tamb)
+       + ε·σ·A·[(T+273.15)^4 − (Tamb+273.15)^4]
+       − η(T)·Pmax·duty<br><br>
+η(T) = η₀ − 0.0009·max(T − Tin, 0)<br><br>
+Tₙ₊₁ = Tₙ − F(Tₙ) / F'(Tₙ)
+        </div>
+
+        <div id="summary" class="summary"></div>
+
+        <h3 class="section-title">Tabla 1: Newton-Raphson para el punto de operación</h3>
+        <div class="table-wrap">
+          <table id="tablaNewton">
+            <thead>
+              <tr>
+                <th>i</th>
+                <th>Tn [°C]</th>
+                <th>η(T)</th>
+                <th>Q agua [W]</th>
+                <th>Pérd. conv. [W]</th>
+                <th>Pérd. rad. [W]</th>
+                <th>F(T) [W]</th>
+                <th>F'(T) [W/°C]</th>
+                <th>Tn+1 [°C]</th>
+                <th>Error [°C]</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3 class="section-title">Tabla 2: Barrido de potencia por duty cycle</h3>
+        <div class="table-wrap">
+          <table id="tablaSweep">
+            <thead>
+              <tr>
+                <th>Duty [%]</th>
+                <th>Potencia útil aprox. [W]</th>
+                <th>T salida [°C]</th>
+                <th>ΔT [°C]</th>
+                <th>Q agua [W]</th>
+                <th>Pérdidas totales [W]</th>
+                <th>Iteraciones</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <p class="note">
+          Este archivo funciona bien en GitHub Pages porque no necesita backend. Python se ejecuta en el navegador con Pyodide.
+          La primera carga puede tardar un poco porque se descarga el runtime de Python/WebAssembly.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let pyodide = null;
+
+    const btn = document.getElementById("btnCalcular");
+    const statusBox = document.getElementById("status");
+
+    function setStatus(text, type = "") {
+      statusBox.className = "status " + type;
+      statusBox.textContent = text;
+    }
+
+    async function iniciarPyodide() {
+      try {
+        pyodide = await loadPyodide();
+        btn.disabled = false;
+        btn.textContent = "Calcular iteraciones con Python";
+        setStatus("Pyodide cargado correctamente. Ya puedes ejecutar los cálculos.", "ok");
+      } catch (err) {
+        console.error(err);
+        setStatus("Error cargando Pyodide. Revisa tu conexión a internet o la consola del navegador.", "error");
+      }
+    }
+
+    function obtenerDatos() {
+      return {
+        tin: Number(document.getElementById("tin").value),
+        tamb: Number(document.getElementById("tamb").value),
+        flow_l_min: Number(document.getElementById("flow").value),
+        power: Number(document.getElementById("power").value),
+        duty: Number(document.getElementById("duty").value) / 100,
+        eta0: Number(document.getElementById("eta0").value),
+        U: Number(document.getElementById("u").value),
+        A: Number(document.getElementById("area").value),
+        emiss: Number(document.getElementById("emiss").value),
+        guess: Number(document.getElementById("guess").value),
+        maxiter: Number(document.getElementById("maxiter").value),
+        tol: Number(document.getElementById("tol").value)
+      };
+    }
+
+    function validar(datos) {
+      const errores = [];
+      if (datos.flow_l_min <= 0) errores.push("El caudal debe ser mayor que 0.");
+      if (datos.power <= 0) errores.push("La potencia debe ser mayor que 0.");
+      if (datos.duty <= 0 || datos.duty > 1) errores.push("El duty debe estar entre 1% y 100%.");
+      if (datos.eta0 <= 0 || datos.eta0 > 1) errores.push("La eficiencia nominal debe estar entre 0 y 1.");
+      if (datos.U < 0) errores.push("El coeficiente U no puede ser negativo.");
+      if (datos.A <= 0) errores.push("El área térmica debe ser mayor que 0.");
+      if (datos.emiss < 0 || datos.emiss > 1) errores.push("La emisividad debe estar entre 0 y 1.");
+      if (datos.maxiter < 1) errores.push("Debe haber al menos 1 iteración.");
+      if (datos.tol <= 0) errores.push("La tolerancia debe ser mayor que 0.");
+      return errores;
+    }
+
+    function fmt(x, dec = 4) {
+      if (x === null || x === undefined || Number.isNaN(Number(x))) return "-";
+      return Number(x).toFixed(dec);
+    }
+
+    function renderSummary(resultado) {
+      const s = resultado.summary;
+      const clsEstado = s.converged ? "good" : "warn";
+
+      document.getElementById("summary").innerHTML = `
+        <div class="metric ${clsEstado}">
+          <span>Temperatura de salida</span>
+          <strong>${fmt(s.final_temperature, 4)} °C</strong>
+        </div>
+        <div class="metric">
+          <span>Incremento térmico</span>
+          <strong>${fmt(s.delta_T, 4)} °C</strong>
+        </div>
+        <div class="metric">
+          <span>Iteraciones usadas</span>
+          <strong>${s.iterations}</strong>
+        </div>
+        <div class="metric ${clsEstado}">
+          <span>Estado</span>
+          <strong>${s.converged ? "Convergió" : "No convergió"}</strong>
+        </div>
+      `;
+    }
+
+    function renderNewton(rows) {
+      const tbody = document.querySelector("#tablaNewton tbody");
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.i}</td>
+          <td>${fmt(r.Tn, 6)}</td>
+          <td>${fmt(r.eta, 6)}</td>
+          <td>${fmt(r.q_water, 3)}</td>
+          <td>${fmt(r.loss_conv, 3)}</td>
+          <td>${fmt(r.loss_rad, 3)}</td>
+          <td>${fmt(r.F, 6)}</td>
+          <td>${fmt(r.dF, 6)}</td>
+          <td>${fmt(r.Tnext, 6)}</td>
+          <td>${fmt(r.error, 8)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderSweep(rows) {
+      const tbody = document.querySelector("#tablaSweep tbody");
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${fmt(r.duty_percent, 0)}</td>
+          <td>${fmt(r.power_useful_approx, 2)}</td>
+          <td>${fmt(r.temperature, 4)}</td>
+          <td>${fmt(r.delta_T, 4)}</td>
+          <td>${fmt(r.q_water, 2)}</td>
+          <td>${fmt(r.total_losses, 2)}</td>
+          <td>${r.iterations}</td>
+          <td>${r.converged ? "Convergió" : "No convergió"}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function calcular() {
+      if (!pyodide) {
+        setStatus("Pyodide todavía no terminó de cargar.", "error");
+        return;
+      }
+
+      const datos = obtenerDatos();
+      const errores = validar(datos);
+
+      if (errores.length > 0) {
+        setStatus(errores.join(" "), "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Calculando con Python...";
+      setStatus("Ejecutando Newton-Raphson y barrido paramétrico desde Python...", "");
+
+      try {
+        pyodide.globals.set("input_data_json", JSON.stringify(datos));
+
+        const code = `
+import json
+import math
+data = json.loads(input_data_json)
+
+rho = 997.0                 # kg/m3, agua cerca de temperatura ambiente
+cp = 4186.0                 # J/(kg*K), calor específico del agua
+sigma = 5.670374419e-8      # W/(m2*K4), constante de Stefan-Boltzmann
+
+tin = float(data["tin"])
+tamb = float(data["tamb"])
+flow_l_min = float(data["flow_l_min"])
+power = float(data["power"])
+duty = float(data["duty"])
+eta0 = float(data["eta0"])
+U = float(data["U"])
+A = float(data["A"])
+emiss = float(data["emiss"])
+guess = float(data["guess"])
+maxiter = int(data["maxiter"])
+tol = float(data["tol"])
+
+# Conversión de caudal:
+# L/min -> m3/s
+Qv = flow_l_min / 1000.0 / 60.0
+mdot = rho * Qv
+
+def eta(T):
+    # Modelo simple: a mayor temperatura de operación, ligera reducción de eficiencia.
+    # Se limita para evitar valores físicamente absurdos.
+    return max(0.40, min(0.99, eta0 - 0.0009 * max(T - tin, 0.0)))
+
+def deta_dT(T):
+    if T > tin:
+        return -0.0009
+    return 0.0
+
+def terms(T, local_duty):
+    TK = T + 273.15
+    TambK = tamb + 273.15
+
+    q_water = mdot * cp * (T - tin)
+    loss_conv = U * A * (T - tamb)
+    loss_rad = emiss * sigma * A * (TK**4 - TambK**4)
+    useful_power = eta(T) * power * local_duty
+
+    F = q_water + loss_conv + loss_rad - useful_power
+
+    # Derivada analítica:
+    # d/dT [mdot*cp*(T-Tin)] = mdot*cp
+    # d/dT [U*A*(T-Tamb)] = U*A
+    # d/dT [eps*sigma*A*((T+273.15)^4 - cte)] = eps*sigma*A*4*(T+273.15)^3
+    # d/dT [-eta(T)*P*duty] = -eta'(T)*P*duty
+    dF = mdot * cp + U * A + emiss * sigma * A * 4.0 * TK**3 - deta_dT(T) * power * local_duty
+
+    return q_water, loss_conv, loss_rad, useful_power, F, dF
+
+def solve_newton(local_duty, local_guess=guess):
+    T = local_guess
+    rows = []
+    converged = False
+
+    for i in range(1, maxiter + 1):
+        q_water, loss_conv, loss_rad, useful_power, F, dF = terms(T, local_duty)
+
+        if abs(dF) < 1e-12:
+            rows.append({
+                "i": i, "Tn": T, "eta": eta(T), "q_water": q_water,
+                "loss_conv": loss_conv, "loss_rad": loss_rad, "F": F,
+                "dF": dF, "Tnext": T, "error": None
+            })
+            break
+
+        Tnext = T - F / dF
+        error = abs(Tnext - T)
+
+        rows.append({
+            "i": i,
+            "Tn": T,
+            "eta": eta(T),
+            "q_water": q_water,
+            "loss_conv": loss_conv,
+            "loss_rad": loss_rad,
+            "F": F,
+            "dF": dF,
+            "Tnext": Tnext,
+            "error": error
+        })
+
+        T = Tnext
+
+        if error < tol:
+            converged = True
+            break
+
+    q_water, loss_conv, loss_rad, useful_power, F, dF = terms(T, local_duty)
+
+    summary = {
+        "final_temperature": T,
+        "delta_T": T - tin,
+        "iterations": len(rows),
+        "converged": converged,
+        "q_water": q_water,
+        "loss_conv": loss_conv,
+        "loss_rad": loss_rad,
+        "total_losses": loss_conv + loss_rad,
+        "useful_power": useful_power,
+        "residual": F
+    }
+
+    return rows, summary
+
+main_rows, main_summary = solve_newton(duty, guess)
+
+# Barrido paramétrico para comparar cómo responde el sistema con distintos porcentajes de activación.
+sweep_rows = []
+for d in [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]:
+    rows, summary = solve_newton(d, guess)
+    sweep_rows.append({
+        "duty_percent": d * 100.0,
+        "power_useful_approx": eta(summary["final_temperature"]) * power * d,
+        "temperature": summary["final_temperature"],
+        "delta_T": summary["delta_T"],
+        "q_water": summary["q_water"],
+        "total_losses": summary["total_losses"],
+        "iterations": summary["iterations"],
+        "converged": summary["converged"]
+    })
+
+result = {
+    "summary": main_summary,
+    "newton_rows": main_rows,
+    "sweep_rows": sweep_rows
+}
+
+json.dumps(result)
+        `;
+
+        const resultText = await pyodide.runPythonAsync(code);
+        const result = JSON.parse(resultText);
+
+        renderSummary(result);
+        renderNewton(result.newton_rows);
+        renderSweep(result.sweep_rows);
+
+        const residual = result.summary.residual;
+        setStatus(
+          `Cálculo completado. Residual final F(T) = ${Number(residual).toExponential(4)} W.`,
+          result.summary.converged ? "ok" : ""
+        );
+      } catch (err) {
+        console.error(err);
+        setStatus("Ocurrió un error ejecutando Python. Revisa la consola. Si abriste el archivo con file://, pruébalo con un servidor local o GitHub Pages.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Calcular iteraciones con Python";
+      }
+    }
+
+    btn.addEventListener("click", calcular);
+    iniciarPyodide();
+  </script>
+</body>
+</html>
