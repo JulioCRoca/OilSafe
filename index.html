@@ -34,10 +34,34 @@
 
     * { box-sizing: border-box; }
 
-    sub {
+    sub, sup {
       font-size: .72em;
       line-height: 0;
-      vertical-align: sub;
+    }
+
+    sub { vertical-align: sub; }
+    sup { vertical-align: super; }
+
+    .frac {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      align-items: center;
+      justify-items: center;
+      vertical-align: middle;
+      line-height: 1.05;
+      margin: 0 .22em;
+      text-align: center;
+    }
+
+    .frac .num {
+      border-bottom: 1.6px solid currentColor;
+      padding: 0 .35em .13em;
+      min-width: 100%;
+    }
+
+    .frac .den {
+      padding: .13em .35em 0;
+      min-width: 100%;
     }
 
     html { scroll-behavior: smooth; }
@@ -86,6 +110,27 @@
       gap: 14px;
       text-decoration: none;
       color: var(--ink);
+    }
+
+    .brand-cluster {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .complaint-button {
+      background: linear-gradient(135deg, var(--deep-blue), var(--safe-blue));
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.24);
+      box-shadow: 0 12px 24px rgba(7,95,226,.18);
+      padding: 10px 15px;
+      font-size: .86rem;
+    }
+
+    .complaint-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(7,95,226,.28);
     }
 
     .brand img {
@@ -530,6 +575,66 @@
       font-weight: 900;
     }
 
+    .method-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: -2px 0 18px;
+    }
+
+    .method-card {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(239,247,255,.88));
+      box-shadow: 0 16px 40px rgba(8,39,96,.08);
+      padding: 18px;
+    }
+
+    .method-card h3 {
+      margin: 0 0 10px;
+      color: var(--deep-blue);
+      font-family: var(--font-tech);
+      font-size: 1.02rem;
+      letter-spacing: -.02em;
+    }
+
+    .method-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: .9rem;
+    }
+
+    .formula-chip {
+      display: block;
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #091b3c;
+      color: #eef6ff;
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      line-height: 1.75;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .formula-chip .formula-row {
+      display: block;
+      margin: 2px 0;
+    }
+
+    .assumption-box {
+      margin-top: 16px;
+      padding: 13px 14px;
+      border-radius: 18px;
+      background: rgba(7,95,226,.065);
+      border: 1px solid rgba(7,95,226,.14);
+      color: #163b72;
+      line-height: 1.55;
+      font-size: .88rem;
+      font-weight: 650;
+    }
+
     .results-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -660,8 +765,8 @@
     tbody tr:last-child { background: rgba(247,156,11,.09); font-weight: 800; }
 
     .chart-box {
-      height: 260px;
-      padding: 18px 20px 22px;
+      height: 430px;
+      padding: 24px 24px 28px;
       border-top: 1px solid var(--line);
       background: linear-gradient(180deg, #fff, #f6f9ff);
     }
@@ -698,9 +803,10 @@
 
     @media (max-width: 980px) {
       .hero { grid-template-columns: 1fr; }
-      .grid.two, .grid.three, .grid.four, .results-grid, .note-grid { grid-template-columns: 1fr; }
+      .grid.two, .grid.three, .grid.four, .results-grid, .note-grid, .method-panel { grid-template-columns: 1fr; }
       .section-head { align-items: flex-start; flex-direction: column; }
       .topbar { align-items: flex-start; flex-direction: column; }
+      .brand-cluster { align-items: flex-start; flex-direction: column; }
       .status-pill { white-space: normal; }
     }
 
@@ -711,19 +817,23 @@
       .brand img { width: 130px; }
       .hero h1 { font-size: 2.35rem; }
       .table-header { flex-direction: column; align-items: flex-start; }
+      .chart-box { height: 360px; padding: 18px 14px 20px; }
     }
   </style>
 </head>
 <body>
   <div class="page-shell">
     <header class="topbar">
-      <a class="brand" href="#top" aria-label="OilSAFE inicio">
-        <img src="assets/oilsafe-logo.png" alt="Logo OilSAFE" />
-        <span class="brand-text">
-          <span class="brand-title">OilSAFE</span>
-          <span class="brand-subtitle">Mecánica de Fluidos · Pyodide</span>
-        </span>
-      </a>
+      <div class="brand-cluster">
+        <a class="brand" href="#top" aria-label="OilSAFE inicio">
+          <img src="assets/oilsafe-logo.png" alt="Logo OilSAFE" />
+          <span class="brand-text">
+            <span class="brand-title">OilSAFE</span>
+            <span class="brand-subtitle">Mecánica de Fluidos · Pyodide</span>
+          </span>
+        </a>
+        <button class="button complaint-button" id="complaintButton" type="button">Enviar quejas</button>
+      </div>
       <div class="status-pill" id="pyStatus">
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Cargando motor de cálculo Python…</span>
@@ -751,7 +861,7 @@
         </div>
         <div class="glass-card formula-card">
           <div class="card-kicker" style="color:#ffcf70;">Modelo base</div>
-          <code>h<sub>L,obj</sub> = ΔP / (ρ·g) + Δz + h<sub>A</sub></code>
+          <code>h<sub>L,obj</sub> = <span class="frac"><span class="num">ΔP</span><span class="den">ρ·g</span></span> + Δz + h<sub>A</sub></code>
           <code>μ = ρ · ν</code>
         </div>
       </aside>
@@ -762,7 +872,7 @@
         <div class="section-head">
           <div>
             <h2>1. Datos globales del sistema</h2>
-            <p>Define la mezcla, el sistema de unidades, la energía disponible y la cantidad de tramos. Para tanques abiertos a la atmósfera, usa ΔP = 0. Si no hay bomba, usa h<sub>A</sub> = 0.</p>
+            <p>Define la mezcla, el sistema de unidades, la energía disponible y la cantidad de tramos. El balance se plantea entre tanques; como sus áreas son muy grandes, se asume v<sub>1</sub> ≈ v<sub>2</sub> ≈ 0, por eso no se pide velocidad en los tanques. Para tanques abiertos a la atmósfera, usa ΔP = 0. Si no hay bomba, usa h<sub>A</sub> = 0.</p>
           </div>
         </div>
 
@@ -833,6 +943,9 @@
                 <input id="relaxation" type="number" value="0.85" step="0.01" min="0.05" max="1" />
               </div>
             </div>
+            <div class="assumption-box">
+              <strong>Supuesto del balance entre tanques:</strong> A<sub>1</sub> y A<sub>2</sub> son mucho mayores que el área de la tubería, por tanto v<sub>1</sub> ≈ v<sub>2</sub> ≈ 0. Las velocidades que aparecen en la iteración son internas de los tramos y solo se usan para calcular pérdidas por fricción y accesorios.
+            </div>
           </article>
         </div>
 
@@ -855,7 +968,7 @@
           <div class="hero-actions" style="margin-top:22px;">
             <button class="button button-primary" id="runButton" disabled>Calcular viscosidad dinámica</button>
             <button class="button button-light" id="resetButton" type="button">Restaurar ejemplo</button>
-            <button class="button button-light" id="csvButton" type="button" disabled>Descargar iteraciones CSV</button>
+            <button class="button button-light" id="pdfButton" type="button" disabled>Descargar iteraciones PDF</button>
           </div>
           <div class="callout" id="messageBox"></div>
         </article>
@@ -866,6 +979,22 @@
           <div>
             <h2>3. Resultados</h2>
             <p>La tabla muestra todas las iteraciones realizadas. El valor final de viscosidad dinámica se calcula como μ = ρ·ν.</p>
+          </div>
+        </div>
+
+        <div class="method-panel">
+          <div class="method-card">
+            <h3>Método de iteración usado</h3>
+            <p>Estimación inversa de viscosidad mediante <strong>método de iteración de punto fijo multivariable con desacoplamiento por bloques y relajación</strong>. Para cada ν asumida se calculan Re, f, pérdidas mayores, pérdidas menores y h<sub>L,calc</sub>; luego se corrige ν hasta igualar h<sub>L,obj</sub>.</p>
+          </div>
+          <div class="method-card">
+            <h3>Fórmula de corrección aplicada</h3>
+            <p>El algoritmo usa una corrección proporcional entre la pérdida objetivo y la pérdida calculada:</p>
+            <span class="formula-chip">
+              <span class="formula-row">C<sub>k</sub> = <span class="frac"><span class="num">h<sub>L,obj</sub></span><span class="den">h<sub>L,calc,k</sub></span></span></span>
+              <span class="formula-row">ν<sub>cand,k+1</sub> = ν<sub>k</sub> · C<sub>k</sub><sup>0,80</sup></span>
+              <span class="formula-row">ν<sub>k+1</sub> = (1 − α)ν<sub>k</sub> + α·ν<sub>cand,k+1</sub></span>
+            </span>
           </div>
         </div>
 
@@ -918,7 +1047,7 @@
                   <th>μ [Pa·s]</th>
                   <th>f<sub>prom.</sub></th>
                   <th>Re<sub>mín.</sub></th>
-                  <th>v<sub>máx.</sub> [m/s]</th>
+                  <th>v<sub>tubería,máx.</sub> [m/s]</th>
                 </tr>
               </thead>
               <tbody id="iterationBody">
@@ -927,8 +1056,8 @@
             </table>
           </div>
           <div class="chart-box" id="chartBox">
-            <svg viewBox="0 0 1000 260" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia vacía">
-              <text x="500" y="138" text-anchor="middle" fill="#687489" font-size="22" font-family="Inter, sans-serif">La curva de convergencia aparecerá aquí</text>
+            <svg viewBox="0 0 1120 420" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia vacía">
+              <text x="560" y="216" text-anchor="middle" fill="#687489" font-size="22" font-family="Inter, sans-serif">La curva de convergencia aparecerá aquí</text>
             </svg>
           </div>
         </div>
@@ -941,7 +1070,7 @@
           </div>
         </div>
         <div class="note-grid">
-          <div class="note"><strong>Convención de ΔP:</strong> se usa directamente la fórmula h<sub>L,obj</sub> = ΔP/(ρ·g) + Δz + h<sub>A</sub>. Ingresa ΔP con el signo que corresponda al planteamiento entre punto inicial y punto final.</div>
+          <div class="note"><strong>Convención de ΔP:</strong> se usa directamente la fórmula h<sub>L,obj</sub> = <span class="frac"><span class="num">ΔP</span><span class="den">ρ·g</span></span> + Δz + h<sub>A</sub>. Ingresa ΔP con el signo que corresponda al planteamiento entre punto inicial y punto final.</div>
           <div class="note"><strong>Unidades internas:</strong> aunque selecciones sistema inglés, el cálculo convierte todo a SI y reporta μ en Pa·s, que es la unidad principal para viscosidad dinámica.</div>
         </div>
       </section>
@@ -1194,6 +1323,14 @@ def calculate_from_json(raw):
     return n.toLocaleString("es-BO", { maximumFractionDigits: digits });
   }
 
+  function plainNumber(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return value ?? "";
+    if (n === 0) return "0";
+    if (Math.abs(n) < 1) return n.toFixed(15).replace(/0+$/, "").replace(/\.$/, "");
+    return String(n);
+  }
+
   function updateMixtureInfo() {
     const selected = $("mixture").selectedOptions[0];
     $("rhoView").value = selected.dataset.rho;
@@ -1219,7 +1356,7 @@ def calculate_from_json(raw):
     const D = data.D ?? "";
     const K = data.K ?? 0;
     const material = data.material ?? "Acero comercial";
-    const eps = data.eps ?? MATERIALS[material].eps_m;
+    const eps = plainNumber(data.eps ?? MATERIALS[material].eps_m);
     return `
       <div class="pipe-card" data-pipe="${i}">
         <div class="pipe-title">
@@ -1359,7 +1496,7 @@ def calculate_from_json(raw):
       }
       lastResult = result;
       renderResults(result);
-      $("csvButton").disabled = false;
+      $("pdfButton").disabled = false;
       if (result.converged) {
         setMessage(`Cálculo completado: convergió en ${result.iterations_count} iteraciones con error relativo final de ${fmt(result.final_error_rel, 8)}.`, "info");
       } else {
@@ -1407,41 +1544,63 @@ def calculate_from_json(raw):
   function renderChart(iterations, target) {
     const box = $("chartBox");
     if (!iterations.length) return;
-    const width = 1000;
-    const height = 260;
-    const padL = 58;
-    const padR = 22;
-    const padT = 24;
-    const padB = 38;
+    const width = 1120;
+    const height = 420;
+    const padL = 86;
+    const padR = 34;
+    const padT = 38;
+    const padB = 62;
     const values = iterations.map(d => d.h_calc);
-    const minY = Math.min(...values, target) * 0.96;
-    const maxY = Math.max(...values, target) * 1.04;
+    let minY = Math.min(...values, target);
+    let maxY = Math.max(...values, target);
+    const rawSpan = Math.max(maxY - minY, 1e-9);
+    const margin = Math.max(rawSpan * 0.16, Math.abs(target) * 0.015, 0.02);
+    minY = Math.max(0, minY - margin);
+    maxY = maxY + margin;
     const span = Math.max(maxY - minY, 1e-9);
-    const x = (i) => padL + (iterations.length === 1 ? 0 : i * (width - padL - padR) / (iterations.length - 1));
-    const y = (v) => padT + (maxY - v) * (height - padT - padB) / span;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+    const x = (i) => padL + (iterations.length === 1 ? plotW / 2 : i * plotW / (iterations.length - 1));
+    const y = (v) => padT + (maxY - v) * plotH / span;
     const points = values.map((v, i) => `${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(" ");
     const yTarget = y(target).toFixed(2);
     const last = iterations[iterations.length - 1];
+    const tickCount = 5;
+    const ticks = Array.from({ length: tickCount }, (_, i) => minY + (span * i) / (tickCount - 1));
+    const grid = ticks.map(v => {
+      const yy = y(v).toFixed(2);
+      return `
+        <line x1="${padL}" y1="${yy}" x2="${width - padR}" y2="${yy}" stroke="rgba(8,39,96,.10)" stroke-width="1"/>
+        <text x="${padL - 12}" y="${Number(yy) + 4}" text-anchor="end" fill="#687489" font-size="13" font-family="Inter, sans-serif">${fmt(v, 3)}</text>`;
+    }).join("");
+    const markerStep = Math.max(1, Math.ceil(iterations.length / 14));
+    const markers = iterations.map((row, i) => ({ row, i })).filter(({ i }) => i % markerStep === 0 || i === iterations.length - 1).map(({ row, i }) =>
+      `<circle cx="${x(i).toFixed(2)}" cy="${y(row.h_calc).toFixed(2)}" r="4.5" fill="#075fe2" stroke="#fff" stroke-width="2"/>`
+    ).join("");
+
     box.innerHTML = `
-      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Gráfica de convergencia">
         <defs>
           <linearGradient id="curveGrad" x1="0" x2="1" y1="0" y2="0">
             <stop offset="0%" stop-color="#f79c0b" />
             <stop offset="100%" stop-color="#075fe2" />
           </linearGradient>
           <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#075fe2" flood-opacity=".18"/>
+            <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#075fe2" flood-opacity=".20"/>
           </filter>
         </defs>
-        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
-        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="rgba(8,39,96,.18)" stroke-width="1"/>
-        <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="rgba(8,39,96,.18)" stroke-width="1"/>
-        <line x1="${padL}" y1="${yTarget}" x2="${width - padR}" y2="${yTarget}" stroke="#f79c0b" stroke-width="2" stroke-dasharray="8 8"/>
-        <text x="${padL + 6}" y="${Math.max(16, yTarget - 8)}" fill="#b7791f" font-size="13" font-family="Inter, sans-serif">h<tspan baseline-shift="sub" font-size="10">L,obj</tspan>: ${fmt(target, 4)} m</text>
-        <polyline points="${points}" fill="none" stroke="url(#curveGrad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#softShadow)"/>
-        <circle cx="${x(iterations.length - 1)}" cy="${y(last.h_calc)}" r="7" fill="#075fe2" />
-        <text x="${padL}" y="${height - 10}" fill="#687489" font-size="13" font-family="Inter, sans-serif">Iteración 1</text>
-        <text x="${width - padR}" y="${height - 10}" text-anchor="end" fill="#687489" font-size="13" font-family="Inter, sans-serif">Iteración ${iterations.length}</text>
+        <rect x="0" y="0" width="${width}" height="${height}" rx="18" fill="transparent"/>
+        ${grid}
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="rgba(8,39,96,.22)" stroke-width="1.2"/>
+        <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="rgba(8,39,96,.22)" stroke-width="1.2"/>
+        <line x1="${padL}" y1="${yTarget}" x2="${width - padR}" y2="${yTarget}" stroke="#f79c0b" stroke-width="2.5" stroke-dasharray="10 9"/>
+        <text x="${padL + 8}" y="${Math.max(22, Number(yTarget) - 10)}" fill="#b7791f" font-size="14" font-family="Inter, sans-serif" font-weight="700">h<tspan baseline-shift="sub" font-size="10">L,obj</tspan>: ${fmt(target, 4)} m</text>
+        <polyline points="${points}" fill="none" stroke="url(#curveGrad)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#softShadow)"/>
+        ${markers}
+        <circle cx="${x(iterations.length - 1)}" cy="${y(last.h_calc)}" r="8" fill="#075fe2" stroke="#fff" stroke-width="3" />
+        <text x="${padL}" y="${height - 23}" fill="#687489" font-size="14" font-family="Inter, sans-serif">Iteración 1</text>
+        <text x="${width - padR}" y="${height - 23}" text-anchor="end" fill="#687489" font-size="14" font-family="Inter, sans-serif">Iteración ${iterations.length}</text>
+        <text x="${padL - 58}" y="${padT - 14}" fill="#687489" font-size="13" font-family="Inter, sans-serif">h<tspan baseline-shift="sub" font-size="9">L</tspan> [m]</text>
       </svg>
     `;
   }
@@ -1456,24 +1615,327 @@ def calculate_from_json(raw):
     $("outStatusText").textContent = "Ejecuta el cálculo para generar el reporte.";
     $("tableSubtitle").textContent = "Sin datos calculados todavía.";
     $("iterationBody").innerHTML = '<tr><td colspan="10" style="text-align:center;color:#687489;">Presiona “Calcular viscosidad dinámica”.</td></tr>';
-    $("chartBox").innerHTML = '<svg viewBox="0 0 1000 260" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia vacía"><text x="500" y="138" text-anchor="middle" fill="#687489" font-size="22" font-family="Inter, sans-serif">La curva de convergencia aparecerá aquí</text></svg>';
-    $("csvButton").disabled = true;
+    $("chartBox").innerHTML = '<svg viewBox="0 0 1120 420" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia vacía"><text x="560" y="216" text-anchor="middle" fill="#687489" font-size="22" font-family="Inter, sans-serif">La curva de convergencia aparecerá aquí</text></svg>';
+    $("pdfButton").disabled = true;
   }
 
-  function downloadCSV() {
-    if (!lastResult || !lastResult.iterations) return;
-    const header = ["iter", "h_L_calc_m", "error_h_L_m", "error_rel", "factor", "nu_m2_s", "mu_Pa_s", "f_prom", "Re_min", "v_max_m_s"];
-    const rows = lastResult.iterations.map(r => [r.iter, r.h_calc, r.error, r.error_rel, r.correction, r.nu, r.mu, r.f_avg, r.re_min, r.v_max]);
-    const csv = [header, ...rows].map(row => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "oilsafe_iteraciones.csv";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+
+  function fmtPlain(x, digits = 6) {
+    if (x === null || x === undefined || Number.isNaN(Number(x))) return "—";
+    const n = Number(x);
+    if (!Number.isFinite(n)) return "—";
+    const abs = Math.abs(n);
+    if (abs !== 0 && (abs < 0.001 || abs >= 100000)) {
+      const exponent = Math.floor(Math.log10(abs));
+      const mantissa = n / Math.pow(10, exponent);
+      const mantissaDigits = Math.min(Math.max(digits - 1, 2), 6);
+      const mantissaText = mantissa.toLocaleString("es-BO", { maximumFractionDigits: mantissaDigits });
+      return `${mantissaText} x 10^${exponent}`;
+    }
+    return n.toLocaleString("es-BO", { maximumFractionDigits: digits });
+  }
+
+  function pdfAscii(value) {
+    return String(value ?? "")
+      .replace(/μ/g, "mu").replace(/ν/g, "nu").replace(/ρ/g, "rho").replace(/Δ/g, "Delta")
+      .replace(/ε/g, "epsilon").replace(/α/g, "alpha").replace(/β/g, "beta")
+      .replace(/≈/g, "~=").replace(/·/g, "*").replace(/×/g, "x")
+      .replace(/²/g, "^2").replace(/³/g, "^3")
+      .replace(/⁻/g, "-").replace(/⁺/g, "+")
+      .replace(/⁰/g, "0").replace(/¹/g, "1").replace(/²/g, "2").replace(/³/g, "3").replace(/⁴/g, "4")
+      .replace(/⁵/g, "5").replace(/⁶/g, "6").replace(/⁷/g, "7").replace(/⁸/g, "8").replace(/⁹/g, "9")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[“”]/g, '"').replace(/[‘’]/g, "'")
+      .replace(/[^\x20-\x7E]/g, " ");
+  }
+
+  function escapePdfText(value) {
+    return pdfAscii(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  }
+
+  function makePdfDocument({ orientation = "portrait" } = {}) {
+    const pageW = orientation === "landscape" ? 841.89 : 595.28;
+    const pageH = orientation === "landscape" ? 595.28 : 841.89;
+    const pages = [];
+    let cmds = [];
+
+    function addPage() {
+      cmds = [];
+      pages.push(cmds);
+    }
+
+    function yPdf(y) { return pageH - y; }
+    function num(v) { return Number(v).toFixed(2); }
+
+    function setColor(r, g, b) {
+      cmds.push(`${(r/255).toFixed(3)} ${(g/255).toFixed(3)} ${(b/255).toFixed(3)} rg\n`);
+      cmds.push(`${(r/255).toFixed(3)} ${(g/255).toFixed(3)} ${(b/255).toFixed(3)} RG\n`);
+    }
+
+    function text(value, x, y, size = 10, font = "F1", r = 12, g = 18, b = 34) {
+      setColor(r, g, b);
+      cmds.push(`BT /${font} ${num(size)} Tf ${num(x)} ${num(yPdf(y))} Td (${escapePdfText(value)}) Tj ET\n`);
+    }
+
+    function line(x1, y1, x2, y2, r = 210, g = 220, b = 235, width = 0.8) {
+      setColor(r, g, b);
+      cmds.push(`${num(width)} w ${num(x1)} ${num(yPdf(y1))} m ${num(x2)} ${num(yPdf(y2))} l S\n`);
+    }
+
+    function rect(x, y, w, h, fill = false, r = 255, g = 255, b = 255) {
+      setColor(r, g, b);
+      cmds.push(`${num(x)} ${num(yPdf(y + h))} ${num(w)} ${num(h)} re ${fill ? "f" : "S"}\n`);
+    }
+
+    function wrap(value, maxChars) {
+      const words = pdfAscii(value).split(/\s+/).filter(Boolean);
+      const lines = [];
+      let current = "";
+      words.forEach(word => {
+        const test = current ? `${current} ${word}` : word;
+        if (test.length > maxChars && current) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = test;
+        }
+      });
+      if (current) lines.push(current);
+      return lines.length ? lines : [""];
+    }
+
+    function wrappedText(value, x, y, maxWidth, size = 9, font = "F1", lineH = 12, r = 12, g = 18, b = 34) {
+      const maxChars = Math.max(8, Math.floor(maxWidth / (size * 0.52)));
+      const lines = wrap(value, maxChars);
+      lines.forEach((lineText, i) => text(lineText, x, y + i * lineH, size, font, r, g, b));
+      return y + lines.length * lineH;
+    }
+
+    function header(title, subtitle) {
+      rect(0, 0, pageW, 50, true, 8, 39, 96);
+      text(title, 32, 22, 16, "F2", 255, 255, 255);
+      text(subtitle, 32, 38, 9, "F1", 230, 244, 255);
+    }
+
+    function blob() {
+      const contents = pages.map(page => page.join(""));
+      const objects = [];
+      objects[1] = `<< /Type /Catalog /Pages 2 0 R >>`;
+      const kids = contents.map((_, i) => `${5 + i * 2} 0 R`).join(" ");
+      objects[2] = `<< /Type /Pages /Kids [${kids}] /Count ${contents.length} >>`;
+      objects[3] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`;
+      objects[4] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>`;
+      contents.forEach((content, i) => {
+        const pageId = 5 + i * 2;
+        const contentId = pageId + 1;
+        objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`;
+        objects[contentId] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+      });
+      let pdf = "%PDF-1.4\n%OilSAFE\n";
+      const offsets = [0];
+      for (let i = 1; i < objects.length; i++) {
+        offsets[i] = pdf.length;
+        pdf += `${i} 0 obj\n${objects[i]}\nendobj\n`;
+      }
+      const xref = pdf.length;
+      pdf += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+      for (let i = 1; i < objects.length; i++) {
+        pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+      }
+      pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+      return new Blob([pdf], { type: "application/pdf" });
+    }
+
+    addPage();
+    return { pageW, pageH, pages, addPage, text, wrappedText, wrap, line, rect, header, blob };
+  }
+
+  function drawSimpleTable(pdf, { x, y, columns, rows, rowHeight = 18, fontSize = 7.2, headerFill = [7, 95, 226], maxY = null, title = "" }) {
+    const totalW = columns.reduce((sum, c) => sum + c.w, 0);
+    const headerH = rowHeight + 2;
+    const bottomLimit = maxY || (pdf.pageH - 36);
+
+    function newPage(tableTitle = "Continuación") {
+      pdf.addPage();
+      pdf.header("OilSAFE - Reporte de iteraciones", tableTitle);
+      y = 72;
+      drawHeader();
+    }
+
+    function drawHeader() {
+      pdf.rect(x, y, totalW, headerH, true, headerFill[0], headerFill[1], headerFill[2]);
+      let cx = x;
+      columns.forEach(col => {
+        pdf.text(col.label, cx + 3, y + 13, fontSize, "F2", 255, 255, 255);
+        cx += col.w;
+      });
+      y += headerH;
+    }
+
+    if (title) {
+      pdf.text(title, x, y, 11, "F2", 8, 39, 96);
+      y += 18;
+    }
+    drawHeader();
+
+    rows.forEach((row, idx) => {
+      const bg = idx % 2 === 0 ? [255,255,255] : [246,248,252];
+      if (y + rowHeight > bottomLimit) newPage();
+      pdf.rect(x, y, totalW, rowHeight, true, bg[0], bg[1], bg[2]);
+      pdf.rect(x, y, totalW, rowHeight, false, 220, 228, 240);
+      let cx = x;
+      columns.forEach(col => {
+        const value = typeof col.get === "function" ? col.get(row) : row[col.key];
+        pdf.text(value, cx + 3, y + 12, fontSize, "F1", 38, 51, 75);
+        cx += col.w;
+      });
+      y += rowHeight;
+    });
+    return y;
+  }
+
+  function downloadIterationsPDF() {
+    if (!lastResult || !lastResult.iterations) {
+      setMessage("Primero ejecuta el cálculo para generar el PDF de iteraciones.", "warn");
+      return;
+    }
+    const pdf = makePdfDocument({ orientation: "landscape" });
+    const data = gatherData();
+    pdf.header("OilSAFE - Iteraciones", "Sistema de tuberias en serie | Punto fijo multivariable desacoplado con relajacion");
+    let y = 72;
+    pdf.text("Resumen del calculo", 32, y, 12, "F2", 8, 39, 96); y += 16;
+    pdf.text(`Mezcla: ${$("mixture").selectedOptions[0].textContent}`, 32, y, 8.5); y += 12;
+    pdf.text(`Q: ${data.Q} ${data.unit === "EN" ? "ft^3/s" : "m^3/s"} | h_L,obj: ${fmtPlain(lastResult.h_target, 5)} m | nu final: ${fmtPlain(lastResult.nu, 8)} m^2/s | mu final: ${fmtPlain(lastResult.mu, 6)} Pa*s`, 32, y, 8.5); y += 12;
+    pdf.text(`Metodo: iteracion de punto fijo multivariable con desacoplamiento por bloques y relajacion. v1 ~= v2 ~= 0 en tanques.`, 32, y, 8.5); y += 12;
+    pdf.text(`Correccion: Ck = h_L,obj / h_L,calc,k ; nu_cand,k+1 = nu_k * Ck^0,80 ; nu_k+1 = (1-alpha)nu_k + alpha*nu_cand,k+1`, 32, y, 8.3); y += 18;
+
+    const columns = [
+      { label: "It", w: 34, get: r => r.iter },
+      { label: "hL calc [m]", w: 82, get: r => fmtPlain(r.h_calc, 6) },
+      { label: "Error hL [m]", w: 82, get: r => fmtPlain(r.error, 6) },
+      { label: "Error rel", w: 74, get: r => fmtPlain(r.error_rel, 8) },
+      { label: "Factor", w: 62, get: r => fmtPlain(r.correction, 7) },
+      { label: "nu [m^2/s]", w: 78, get: r => fmtPlain(r.nu, 9) },
+      { label: "mu [Pa*s]", w: 76, get: r => fmtPlain(r.mu, 6) },
+      { label: "f prom", w: 62, get: r => fmtPlain(r.f_avg, 6) },
+      { label: "Re min", w: 70, get: r => fmtPlain(r.re_min, 4) },
+      { label: "v tub max [m/s]", w: 104, get: r => fmtPlain(r.v_max, 5) }
+    ];
+    drawSimpleTable(pdf, { x: 32, y, columns, rows: lastResult.iterations, rowHeight: 17, fontSize: 7.1, title: "Tabla de iteraciones" });
+    downloadBlob(pdf.blob(), "oilsafe_iteraciones.pdf");
+  }
+
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function buildComplaintRows(count = 10) {
+    const names = [
+      "Carlos Rojas", "Maria Fernanda Vargas", "Luis Alberto Mendez", "Daniela Cuellar", "Jorge Justiniano",
+      "Ana Paola Rivero", "Miguel Angel Gutierrez", "Roxana Salvatierra", "Fernando Antelo", "Carolina Pedraza",
+      "Ramiro Suarez", "Gabriela Moreno", "Hugo Limpias", "Valeria Montero"
+    ];
+    const problems = [
+      "Olor a gasolina en el aceite", "Perdida de viscosidad", "Presencia de carbonilla", "Desgaste prematuro del motor",
+      "Baja presion de lubricacion", "Humo oscuro y aceite degradado", "Ruido interno del motor", "Cambio de aceite antes del kilometraje previsto"
+    ];
+    const descriptions = [
+      "El conductor reporta que el aceite se volvio mas fluido de lo normal y presenta olor fuerte a combustible.",
+      "Despues de cargar combustible, el vehiculo empezo a perder potencia y el aceite mostro senales de dilucion.",
+      "El taller encontro particulas oscuras en suspension dentro del lubricante durante una revision preventiva.",
+      "Se observo mayor ruido de friccion en el motor y el aceite no mantenia una pelicula lubricante estable.",
+      "El aceite perdio consistencia antes del intervalo habitual de cambio y genero preocupacion por desgaste interno.",
+      "La muestra presento coloracion oscura, olor a gasolina y menor resistencia al escurrimiento.",
+      "El transportista indica aumento de mantenimiento correctivo por posible contaminacion del lubricante.",
+      "Se sospecha mala combustion porque el aceite se contamino con residuos y combustible no quemado."
+    ];
+    const shuffledNames = [...names].sort(() => Math.random() - 0.5);
+    return Array.from({ length: count }, (_, i) => ({
+      nombre: shuffledNames[i % shuffledNames.length],
+      problema: pickRandom(problems),
+      descripcion: pickRandom(descriptions)
+    }));
+  }
+
+  function drawComplaintTable(pdf, rows) {
+    let y = 116;
+    const x = 32;
+    const cols = [
+      { label: "Nombre", w: 112 },
+      { label: "Problema principal", w: 145 },
+      { label: "Descripcion de la queja", w: 274 }
+    ];
+    const totalW = cols.reduce((s,c)=>s+c.w,0);
+    const headerH = 24;
+    function header() {
+      pdf.rect(x, y, totalW, headerH, true, 8, 39, 96);
+      let cx = x;
+      cols.forEach(col => { pdf.text(col.label, cx + 5, y + 15, 8.5, "F2", 255,255,255); cx += col.w; });
+      y += headerH;
+    }
+    header();
+    rows.forEach((row, idx) => {
+      const problemLines = pdf.wrap(row.problema, 32);
+      const descLines = pdf.wrap(row.descripcion, 58);
+      const nameLines = pdf.wrap(row.nombre, 24);
+      const maxLines = Math.max(problemLines.length, descLines.length, nameLines.length);
+      const rowH = Math.max(38, 12 + maxLines * 10);
+      if (y + rowH > 802) {
+        pdf.addPage();
+        pdf.header("OilSAFE - Quejas simuladas", "Continuacion de tabla");
+        y = 72;
+        header();
+      }
+      const bg = idx % 2 === 0 ? [255,255,255] : [246,248,252];
+      pdf.rect(x, y, totalW, rowH, true, bg[0], bg[1], bg[2]);
+      pdf.rect(x, y, totalW, rowH, false, 220, 228, 240);
+      let cx = x;
+      nameLines.forEach((line, i) => pdf.text(line, cx + 5, y + 14 + i*10, 7.7));
+      cx += cols[0].w;
+      problemLines.forEach((line, i) => pdf.text(line, cx + 5, y + 14 + i*10, 7.7));
+      cx += cols[1].w;
+      descLines.forEach((line, i) => pdf.text(line, cx + 5, y + 14 + i*10, 7.7));
+      y += rowH;
+    });
+  }
+
+  function buildComplaintsPdfBlob(rows) {
+    const pdf = makePdfDocument({ orientation: "portrait" });
+    pdf.header("OilSAFE - Reporte de quejas", "Documento demostrativo generado desde la pagina para envio por WhatsApp");
+    let y = 72;
+    pdf.text("Tabla de quejas generadas", 32, y, 13, "F2", 8, 39, 96); y += 17;
+    pdf.wrappedText("Las quejas son datos simulados relacionados con contaminacion del aceite SAE 20W-50 por gasolina, carbonilla, perdida de viscosidad y posibles efectos sobre el motor.", 32, y, 530, 9, "F1", 11); 
+    drawComplaintTable(pdf, rows);
+    return pdf.blob();
+  }
+
+  async function sendComplaints() {
+    const rows = buildComplaintRows(10);
+    const blob = buildComplaintsPdfBlob(rows);
+    const filename = "quejas_oilsafe.pdf";
+    const message = "Hola, envio el reporte PDF de quejas de OilSAFE relacionado con contaminacion del aceite, perdida de viscosidad y posibles danos por combustible deficiente.";
+    try {
+      const file = new File([blob], filename, { type: "application/pdf" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: "Quejas OilSAFE", text: message, files: [file] });
+        return;
+      }
+    } catch (_) {
+      // Fallback to download + WhatsApp link.
+    }
+    downloadBlob(blob, filename);
+    window.open(`https://wa.me/59169191184?text=${encodeURIComponent(message + " El archivo generado se llama quejas_oilsafe.pdf; adjuntalo en este chat.")}`, "_blank", "noopener,noreferrer");
+    setMessage("Se generó el PDF de quejas y se abrió WhatsApp con el mensaje listo. En escritorio, por seguridad del navegador, adjunta manualmente el PDF descargado; en móvil se intentará compartir el archivo directamente si el sistema lo permite.", "info");
   }
 
   async function initPyodide() {
@@ -1513,7 +1975,8 @@ def calculate_from_json(raw):
     $("pipeCount").addEventListener("change", () => generatePipes(false));
     $("runButton").addEventListener("click", runCalculation);
     $("resetButton").addEventListener("click", resetExample);
-    $("csvButton").addEventListener("click", downloadCSV);
+    $("pdfButton").addEventListener("click", downloadIterationsPDF);
+    $("complaintButton").addEventListener("click", sendComplaints);
     initPyodide();
   });
 </script>
