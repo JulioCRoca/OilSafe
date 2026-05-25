@@ -64,6 +64,118 @@
       min-width: 100%;
     }
 
+
+    .math-equation {
+      display: flex;
+      align-items: center;
+      gap: .48em;
+      width: 100%;
+      max-width: 100%;
+      margin-top: 12px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #071b42 0%, #082760 45%, #075fe2 100%);
+      border: 1px solid rgba(7,95,226,.28);
+      box-shadow: 0 14px 30px rgba(8,39,96,.18);
+      overflow-x: auto;
+      overflow-y: hidden;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: clamp(1.12rem, 2.15vw, 1.62rem);
+      line-height: 1.22;
+      color: #ffffff;
+      white-space: nowrap;
+      scrollbar-width: thin;
+    }
+
+    .math-equation::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .math-equation::-webkit-scrollbar-track {
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+    }
+
+    .math-equation::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,.45);
+      border-radius: 999px;
+    }
+
+    .big-frac {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      align-items: center;
+      justify-items: center;
+      vertical-align: middle;
+      line-height: 1.05;
+      text-align: center;
+    }
+
+    .big-frac > .num {
+      width: 100%;
+      border-bottom: 2.2px solid currentColor;
+      padding: 0 .5em .16em;
+    }
+
+    .big-frac > .den {
+      width: 100%;
+      padding: .22em .5em 0;
+    }
+
+    .math-bracket {
+      font-size: 1.45em;
+      line-height: 0;
+      vertical-align: middle;
+    }
+
+    .complaint-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .quick-complaint-button {
+      background: rgba(255,255,255,.92);
+      color: var(--deep-blue);
+      border: 1px solid rgba(8,39,96,.12);
+      box-shadow: 0 10px 24px rgba(8,39,96,.09);
+      padding: 10px 13px;
+      font-size: .82rem;
+    }
+
+    .quick-complaint-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(8,39,96,.16);
+    }
+
+    .complaint-stats-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.91);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .complaint-chart-box {
+      height: 360px;
+      padding: 22px 24px 26px;
+      background: linear-gradient(180deg, #fff, #f6f9ff);
+    }
+
+    .complaint-chart-box svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .complaint-stats-footer {
+      padding: 0 24px 20px;
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.5;
+    }
+
     html { scroll-behavior: smooth; }
 
     body {
@@ -807,6 +919,7 @@
       .section-head { align-items: flex-start; flex-direction: column; }
       .topbar { align-items: flex-start; flex-direction: column; }
       .brand-cluster { align-items: flex-start; flex-direction: column; }
+      .complaint-actions { align-items: flex-start; }
       .status-pill { white-space: normal; }
     }
 
@@ -818,6 +931,7 @@
       .hero h1 { font-size: 2.35rem; }
       .table-header { flex-direction: column; align-items: flex-start; }
       .chart-box { height: 360px; padding: 18px 14px 20px; }
+      .complaint-chart-box { height: 330px; padding: 18px 14px 22px; }
     }
   </style>
 </head>
@@ -832,7 +946,11 @@
             <span class="brand-subtitle">Mecánica de Fluidos · Pyodide</span>
           </span>
         </a>
-        <button class="button complaint-button" id="complaintButton" type="button">Enviar quejas</button>
+        <div class="complaint-actions" aria-label="Acciones de quejas OilSAFE">
+          <button class="button complaint-button" id="complaintButton" type="button">Enviar quejas</button>
+          <button class="button quick-complaint-button" id="gasComplaintButton" type="button">Queja: olor a gasolina</button>
+          <button class="button quick-complaint-button" id="carbonComplaintButton" type="button">Queja: carbonilla</button>
+        </div>
       </div>
       <div class="status-pill" id="pyStatus">
         <span class="status-dot" id="statusDot"></span>
@@ -985,16 +1103,28 @@
         <div class="method-panel">
           <div class="method-card">
             <h3>Método de iteración usado</h3>
-            <p>Estimación inversa de viscosidad mediante <strong>método de iteración de punto fijo multivariable con desacoplamiento por bloques y relajación</strong>. Para cada ν asumida se calculan Re, f, pérdidas mayores, pérdidas menores y h<sub>L,calc</sub>; luego se corrige ν hasta igualar h<sub>L,obj</sub>.</p>
+            <p>Estimación inversa de viscosidad mediante <strong>método de iteración de punto fijo multivariable con desacoplamiento por bloques y relajación</strong>. Para cada ν asumida se calculan R<sub>n,i</sub>, f<sub>i</sub> con Swamee-Jain, pérdidas mayores, pérdidas menores y h<sub>L,calc</sub>; luego se ajusta ν hasta igualar h<sub>L,obj</sub>.</p>
           </div>
           <div class="method-card">
-            <h3>Fórmula de corrección aplicada</h3>
-            <p>El algoritmo usa una corrección proporcional entre la pérdida objetivo y la pérdida calculada:</p>
-            <span class="formula-chip">
-              <span class="formula-row">C<sub>k</sub> = <span class="frac"><span class="num">h<sub>L,obj</sub></span><span class="den">h<sub>L,calc,k</sub></span></span></span>
-              <span class="formula-row">ν<sub>cand,k+1</sub> = ν<sub>k</sub> · C<sub>k</sub><sup>0,80</sup></span>
-              <span class="formula-row">ν<sub>k+1</sub> = (1 − α)ν<sub>k</sub> + α·ν<sub>cand,k+1</sub></span>
-            </span>
+            <h3>Fórmula del factor de fricción aplicada</h3>
+            <p>Para el régimen turbulento se usa la ecuación explícita de Swamee-Jain, con rugosidad ε, diámetro D<sub>i</sub> y número de Reynolds R<sub>n,i</sub>:</p>
+            <div class="math-equation" aria-label="Fórmula de Swamee-Jain para el factor de fricción">
+              <span>f<sub>i</sub></span>
+              <span>=</span>
+              <span class="big-frac">
+                <span class="num">0.25</span>
+                <span class="den">
+                  <span class="math-bracket">[</span>
+                  log<sub>10</sub>
+                  <span>(</span>
+                  <span class="frac"><span class="num">ε</span><span class="den">3.7D<sub>i</sub></span></span>
+                  <span>+</span>
+                  <span class="frac"><span class="num">5.74</span><span class="den">R<sub>n,i</sub><sup>0.9</sup></span></span>
+                  <span>)</span>
+                  <span class="math-bracket">]</span><sup>2</sup>
+                </span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1046,7 +1176,7 @@
                   <th>ν [m²/s]</th>
                   <th>μ [Pa·s]</th>
                   <th>f<sub>prom.</sub></th>
-                  <th>Re<sub>mín.</sub></th>
+                  <th>R<sub>n,mín.</sub></th>
                   <th>v<sub>tubería,máx.</sub> [m/s]</th>
                 </tr>
               </thead>
@@ -1059,6 +1189,29 @@
             <svg viewBox="0 0 1120 420" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia vacía">
               <text x="560" y="216" text-anchor="middle" fill="#687489" font-size="22" font-family="Inter, sans-serif">La curva de convergencia aparecerá aquí</text>
             </svg>
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+
+        <div class="complaint-stats-card" id="complaintStats">
+          <div class="table-header">
+            <div>
+              <h3>Estadística comparativa de quejas</h3>
+              <p id="complaintStatsSubtitle">Quejas simuladas asociadas al análisis de contaminación del aceite.</p>
+            </div>
+            <div class="status-pill" style="background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.24); box-shadow:none;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#ffcf70;display:inline-block;"></span>
+              Actualización aleatoria por cálculo
+            </div>
+          </div>
+          <div class="complaint-chart-box" id="complaintChartBox">
+            <svg viewBox="0 0 1120 340" preserveAspectRatio="none" role="img" aria-label="Gráfica de quejas vacía">
+              <text x="560" y="180" text-anchor="middle" fill="#687489" font-size="20" font-family="Inter, sans-serif">Las estadísticas de quejas aparecerán aquí</text>
+            </svg>
+          </div>
+          <div class="complaint-stats-footer" id="complaintStatsFooter">
+            Cada vez que se ejecuta un cálculo, existe una probabilidad aleatoria de sumar una unidad a una categoría de queja.
           </div>
         </div>
       </section>
@@ -1102,9 +1255,12 @@ def _to_float(value, name, positive=False, nonnegative=False):
         raise CalculationError(f"El valor de {name} no es finito.")
     return x
 
-def colebrook_white(Re, eps, D):
-    """Factor de fricción Darcy. Laminar: 64/Re. Turbulento: Colebrook-White iterativo.
-    En transición se mezcla suavemente entre ambos modelos para evitar saltos numéricos.
+def swamee_jain_factor(Re, eps, D):
+    """Factor de fricción Darcy.
+    Laminar: 64/Re.
+    Turbulento: Swamee-Jain:
+    f_i = 0.25 / [log10(eps/(3.7D_i) + 5.74/(Re_i^0.9))]^2
+    En transición se mezcla suavemente entre laminar y turbulento.
     """
     Re = abs(Re)
     if Re < 1e-12:
@@ -1113,25 +1269,14 @@ def colebrook_white(Re, eps, D):
     if Re <= 2300.0:
         return f_lam
 
-    rel = max(eps / max(D, 1e-12), 0.0)
+    rel_term = max(eps, 0.0) / (3.7 * max(D, 1e-12))
+    re_term = 5.74 / (Re ** 0.9)
+    argument = max(rel_term + re_term, 1e-12)
     try:
-        f_turb = 0.25 / (math.log10(rel / 3.7 + 5.74 / (Re ** 0.9)) ** 2)
+        f_turb = 0.25 / (math.log10(argument) ** 2)
     except Exception:
         f_turb = 0.02
-
     f_turb = min(max(f_turb, 1e-6), 1.0)
-    for _ in range(18):
-        denom = rel / 3.7 + 2.51 / (Re * math.sqrt(f_turb))
-        if denom <= 0:
-            break
-        inv_sqrt = -2.0 * math.log10(denom)
-        if inv_sqrt <= 0:
-            break
-        f_new = 1.0 / (inv_sqrt * inv_sqrt)
-        if abs(f_new - f_turb) < 1e-10:
-            f_turb = f_new
-            break
-        f_turb = 0.55 * f_turb + 0.45 * f_new
 
     if Re < 4000.0:
         w = (Re - 2300.0) / (4000.0 - 2300.0)
@@ -1149,7 +1294,7 @@ def model_head_loss(nu, Q, pipes):
         A = math.pi * D * D / 4.0
         v = Q / A
         Re = abs(v) * D / max(nu, 1e-18)
-        f = colebrook_white(Re, eps, D)
+        f = swamee_jain_factor(Re, eps, D)
         v_head = (v * v) / (2.0 * G)
         h_major = f * (L / D) * v_head
         h_minor = K * v_head
@@ -1291,6 +1436,16 @@ def calculate_from_json(raw):
 
   let pyodide = null;
   let lastResult = null;
+
+  const COMPLAINT_STATS_KEY = "oilsafeComplaintStats";
+  const COMPLAINT_CATEGORIES = [
+    { key: "gasolina", label: "Olor a gasolina", base: 18 },
+    { key: "viscosidad", label: "Pérdida de viscosidad", base: 15 },
+    { key: "carbonilla", label: "Carbonilla en aceite", base: 12 },
+    { key: "lubricacion", label: "Baja lubricación", base: 9 },
+    { key: "desgaste", label: "Desgaste del motor", base: 7 },
+    { key: "humo", label: "Humo oscuro", base: 5 }
+  ];
 
   const $ = (id) => document.getElementById(id);
 
@@ -1478,6 +1633,126 @@ def calculate_from_json(raw):
     box.textContent = "";
   }
 
+
+  function getComplaintStats() {
+    let stored = null;
+    try {
+      stored = JSON.parse(localStorage.getItem(COMPLAINT_STATS_KEY) || "null");
+    } catch (_) {
+      stored = null;
+    }
+    const stats = {};
+    COMPLAINT_CATEGORIES.forEach(cat => {
+      const value = stored && Number.isFinite(Number(stored[cat.key])) ? Number(stored[cat.key]) : cat.base;
+      stats[cat.key] = value;
+    });
+    return stats;
+  }
+
+  function saveComplaintStats(stats) {
+    try {
+      localStorage.setItem(COMPLAINT_STATS_KEY, JSON.stringify(stats));
+    } catch (_) {}
+  }
+
+  function registerComplaint(key, amount = 1) {
+    const stats = getComplaintStats();
+    if (!Object.prototype.hasOwnProperty.call(stats, key)) return;
+    stats[key] += amount;
+    saveComplaintStats(stats);
+    renderComplaintChart(stats, key);
+  }
+
+  function maybeAddRandomComplaint() {
+    if (Math.random() < 0.68) {
+      const category = COMPLAINT_CATEGORIES[Math.floor(Math.random() * COMPLAINT_CATEGORIES.length)];
+      registerComplaint(category.key, 1);
+      return category;
+    }
+    renderComplaintChart(getComplaintStats(), null);
+    return null;
+  }
+
+  function renderComplaintChart(stats = getComplaintStats(), highlightedKey = null) {
+    const box = $("complaintChartBox");
+    if (!box) return;
+
+    const width = 1120;
+    const height = 340;
+    const padL = 190;
+    const padR = 58;
+    const padT = 34;
+    const padB = 46;
+    const plotW = width - padL - padR;
+    const rowGap = 13;
+    const barH = 27;
+    const maxValue = Math.max(...COMPLAINT_CATEGORIES.map(cat => stats[cat.key] || 0), 1);
+    const roundedMax = Math.ceil(maxValue / 5) * 5;
+
+    const gridValues = Array.from({ length: 6 }, (_, i) => Math.round((roundedMax * i) / 5));
+    const grid = gridValues.map(v => {
+      const x = padL + (v / roundedMax) * plotW;
+      return `
+        <line x1="${x.toFixed(2)}" y1="${padT}" x2="${x.toFixed(2)}" y2="${height - padB}" stroke="rgba(8,39,96,.10)" stroke-width="1"/>
+        <text x="${x.toFixed(2)}" y="${height - 18}" text-anchor="middle" fill="#687489" font-size="12" font-family="Inter, sans-serif">${v}</text>`;
+    }).join("");
+
+    const bars = COMPLAINT_CATEGORIES.map((cat, idx) => {
+      const value = stats[cat.key] || 0;
+      const y = padT + idx * (barH + rowGap);
+      const w = Math.max(8, (value / roundedMax) * plotW);
+      const isHigh = cat.key === highlightedKey;
+      const fill = isHigh ? "url(#complaintHot)" : "url(#complaintGrad)";
+      return `
+        <text x="${padL - 14}" y="${y + 19}" text-anchor="end" fill="#26334b" font-size="13" font-family="Inter, sans-serif" font-weight="700">${cat.label}</text>
+        <rect x="${padL}" y="${y}" width="${plotW}" height="${barH}" rx="13.5" fill="rgba(8,39,96,.055)"/>
+        <rect x="${padL}" y="${y}" width="${w.toFixed(2)}" height="${barH}" rx="13.5" fill="${fill}" filter="url(#barShadow)"/>
+        <text x="${Math.min(width - padR - 8, padL + w + 12).toFixed(2)}" y="${y + 19}" fill="#082760" font-size="13" font-family="Inter, sans-serif" font-weight="800">${value}</text>`;
+    }).join("");
+
+    const total = COMPLAINT_CATEGORIES.reduce((sum, cat) => sum + (stats[cat.key] || 0), 0);
+    $("complaintStatsSubtitle").textContent = `Total simulado: ${total} quejas registradas.`;
+    $("complaintStatsFooter").textContent = highlightedKey
+      ? "Se actualizó una categoría de queja después del último cálculo o botón rápido."
+      : "En este cálculo no se sumó queja nueva o solo se refrescó la estadística.";
+
+    box.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Gráfica comparativa de quejas OilSAFE">
+        <defs>
+          <linearGradient id="complaintGrad" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#f79c0b"/>
+            <stop offset="100%" stop-color="#075fe2"/>
+          </linearGradient>
+          <linearGradient id="complaintHot" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#f86906"/>
+            <stop offset="100%" stop-color="#0d92f0"/>
+          </linearGradient>
+          <filter id="barShadow" x="-8%" y="-40%" width="116%" height="180%">
+            <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#075fe2" flood-opacity=".18"/>
+          </filter>
+        </defs>
+        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
+        ${grid}
+        ${bars}
+        <text x="${padL}" y="${height - 4}" fill="#687489" font-size="12" font-family="Inter, sans-serif">Cantidad de quejas</text>
+      </svg>
+    `;
+  }
+
+  function openWhatsAppComplaint(kind = "general") {
+    const phone = "59169191184";
+    const messages = {
+      general: "Hola, quiero enviar una queja relacionada con OilSAFE. Necesito reportar una posible contaminación del aceite y revisar la pérdida de viscosidad calculada en la página.",
+      gasolina: "Hola, quiero reportar una queja frecuente en OilSAFE: el aceite presenta olor a gasolina y posible dilución por combustible.",
+      carbonilla: "Hola, quiero reportar una queja frecuente en OilSAFE: se observa presencia de carbonilla o partículas oscuras en el aceite."
+    };
+    const keys = { general: "viscosidad", gasolina: "gasolina", carbonilla: "carbonilla" };
+    if (keys[kind]) registerComplaint(keys[kind], 1);
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(messages[kind] || messages.general)}`;
+    const opened = window.open(url, "_blank", "noopener,noreferrer");
+    if (!opened) window.location.href = url;
+  }
+
   async function runCalculation() {
     clearMessage();
     if (!pyodide) {
@@ -1496,6 +1771,7 @@ def calculate_from_json(raw):
       }
       lastResult = result;
       renderResults(result);
+      maybeAddRandomComplaint();
       $("pdfButton").disabled = false;
       if (result.converged) {
         setMessage(`Cálculo completado: convergió en ${result.iterations_count} iteraciones con error relativo final de ${fmt(result.final_error_rel, 8)}.`, "info");
@@ -1631,16 +1907,13 @@ def calculate_from_json(raw):
   }
 
   function fmtPlain(x, digits = 6) {
-    if (x === null || x === undefined || Number.isNaN(Number(x))) return "—";
+    if (x === null || x === undefined || Number.isNaN(Number(x))) return "-";
     const n = Number(x);
-    if (!Number.isFinite(n)) return "—";
+    if (!Number.isFinite(n)) return "-";
     const abs = Math.abs(n);
-    if (abs !== 0 && (abs < 0.001 || abs >= 100000)) {
-      const exponent = Math.floor(Math.log10(abs));
-      const mantissa = n / Math.pow(10, exponent);
-      const mantissaDigits = Math.min(Math.max(digits - 1, 2), 6);
-      const mantissaText = mantissa.toLocaleString("es-BO", { maximumFractionDigits: mantissaDigits });
-      return `${mantissaText} x 10^${exponent}`;
+    if (abs !== 0 && abs < 0.001) {
+      const decimals = Math.min(Math.max(digits + 4, 8), 14);
+      return n.toLocaleString("es-BO", { maximumFractionDigits: decimals });
     }
     return n.toLocaleString("es-BO", { maximumFractionDigits: digits });
   }
@@ -1650,7 +1923,7 @@ def calculate_from_json(raw):
       .replace(/μ/g, "mu").replace(/ν/g, "nu").replace(/ρ/g, "rho").replace(/Δ/g, "Delta")
       .replace(/ε/g, "epsilon").replace(/α/g, "alpha").replace(/β/g, "beta")
       .replace(/≈/g, "~=").replace(/·/g, "*").replace(/×/g, "x")
-      .replace(/²/g, "^2").replace(/³/g, "^3")
+      .replace(/²/g, "2").replace(/³/g, "3")
       .replace(/⁻/g, "-").replace(/⁺/g, "+")
       .replace(/⁰/g, "0").replace(/¹/g, "1").replace(/²/g, "2").replace(/³/g, "3").replace(/⁴/g, "4")
       .replace(/⁵/g, "5").replace(/⁶/g, "6").replace(/⁷/g, "7").replace(/⁸/g, "8").replace(/⁹/g, "9")
@@ -1685,6 +1958,33 @@ def calculate_from_json(raw):
     function text(value, x, y, size = 10, font = "F1", r = 12, g = 18, b = 34) {
       setColor(r, g, b);
       cmds.push(`BT /${font} ${num(size)} Tf ${num(x)} ${num(yPdf(y))} Td (${escapePdfText(value)}) Tj ET\n`);
+    }
+
+
+    function approximateTextWidth(value, size = 10) {
+      const clean = pdfAscii(value);
+      let width = 0;
+      for (const ch of clean) {
+        if (ch === " ") width += size * 0.28;
+        else if (".,:;|!iIl'".includes(ch)) width += size * 0.24;
+        else if ("MW@#%".includes(ch)) width += size * 0.78;
+        else width += size * 0.52;
+      }
+      return width;
+    }
+
+    function richText(parts, x, y, size = 10, font = "F1", r = 12, g = 18, b = 34) {
+      let cursor = x;
+      for (const part of parts) {
+        const raw = part && Object.prototype.hasOwnProperty.call(part, "t") ? part.t : "";
+        const isSub = Boolean(part && part.sub);
+        const isSup = Boolean(part && part.sup);
+        const localSize = (isSub || isSup) ? size * 0.70 : size;
+        const yShift = isSup ? -size * 0.46 : isSub ? size * 0.34 : 0;
+        text(raw, cursor, y + yShift, localSize, font, r, g, b);
+        cursor += approximateTextWidth(raw, localSize);
+      }
+      return cursor;
     }
 
     function line(x1, y1, x2, y2, r = 210, g = 220, b = 235, width = 0.8) {
@@ -1757,7 +2057,7 @@ def calculate_from_json(raw):
     }
 
     addPage();
-    return { pageW, pageH, pages, addPage, text, wrappedText, wrap, line, rect, header, blob };
+    return { pageW, pageH, pages, addPage, text, richText, wrappedText, wrap, line, rect, header, blob };
   }
 
   function drawSimpleTable(pdf, { x, y, columns, rows, rowHeight = 18, fontSize = 7.2, headerFill = [7, 95, 226], maxY = null, title = "" }) {
@@ -1776,7 +2076,11 @@ def calculate_from_json(raw):
       pdf.rect(x, y, totalW, headerH, true, headerFill[0], headerFill[1], headerFill[2]);
       let cx = x;
       columns.forEach(col => {
-        pdf.text(col.label, cx + 3, y + 13, fontSize, "F2", 255, 255, 255);
+        if (col.labelParts) {
+          pdf.richText(col.labelParts, cx + 3, y + 13, fontSize, "F2", 255, 255, 255);
+        } else {
+          pdf.text(col.label, cx + 3, y + 13, fontSize, "F2", 255, 255, 255);
+        }
         cx += col.w;
       });
       y += headerH;
@@ -1811,25 +2115,37 @@ def calculate_from_json(raw):
     }
     const pdf = makePdfDocument({ orientation: "landscape" });
     const data = gatherData();
-    pdf.header("OilSAFE - Iteraciones", "Sistema de tuberias en serie | Punto fijo multivariable desacoplado con relajacion");
+    pdf.header("OilSAFE - Iteraciones", "Sistema de tuberias en serie | Swamee-Jain | Punto fijo desacoplado con relajacion");
     let y = 72;
     pdf.text("Resumen del calculo", 32, y, 12, "F2", 8, 39, 96); y += 16;
     pdf.text(`Mezcla: ${$("mixture").selectedOptions[0].textContent}`, 32, y, 8.5); y += 12;
-    pdf.text(`Q: ${data.Q} ${data.unit === "EN" ? "ft^3/s" : "m^3/s"} | h_L,obj: ${fmtPlain(lastResult.h_target, 5)} m | nu final: ${fmtPlain(lastResult.nu, 8)} m^2/s | mu final: ${fmtPlain(lastResult.mu, 6)} Pa*s`, 32, y, 8.5); y += 12;
-    pdf.text(`Metodo: iteracion de punto fijo multivariable con desacoplamiento por bloques y relajacion. v1 ~= v2 ~= 0 en tanques.`, 32, y, 8.5); y += 12;
-    pdf.text(`Correccion: Ck = h_L,obj / h_L,calc,k ; nu_cand,k+1 = nu_k * Ck^0,80 ; nu_k+1 = (1-alpha)nu_k + alpha*nu_cand,k+1`, 32, y, 8.3); y += 18;
+    pdf.richText([
+      {t:`Q: ${data.Q} ${data.unit === "EN" ? "ft" : "m"}`}, {t:"3", sup:true}, {t:"/s | "},
+      {t:"h"}, {t:"L,obj", sub:true}, {t:`: ${fmtPlain(lastResult.h_target, 5)} m | `},
+      {t:"nu final: "}, {t:`${fmtPlain(lastResult.nu, 8)} m`}, {t:"2", sup:true}, {t:"/s | "},
+      {t:"mu final: "}, {t:`${fmtPlain(lastResult.mu, 6)} Pa*s`}
+    ], 32, y, 8.5, "F1", 12, 18, 34); y += 13;
+    pdf.richText([
+      {t:"Metodo: punto fijo multivariable con desacoplamiento por bloques. En tanques: v"}, {t:"1", sub:true},
+      {t:" ~= v"}, {t:"2", sub:true}, {t:" ~= 0."}
+    ], 32, y, 8.5, "F1", 12, 18, 34); y += 13;
+    pdf.text("Factor de friccion turbulento usado:", 32, y, 8.5, "F2", 8, 39, 96); y += 12;
+    pdf.richText([
+      {t:"f"}, {t:"i", sub:true}, {t:" = 0.25 / [log"}, {t:"10", sub:true}, {t:"( epsilon/(3.7D"}, {t:"i", sub:true},
+      {t:") + 5.74/(R"}, {t:"n,i", sub:true}, {t:")"}, {t:"0.9", sup:true}, {t:") ]"}, {t:"2", sup:true}
+    ], 32, y, 8.3, "F1", 12, 18, 34); y += 18;
 
     const columns = [
       { label: "It", w: 34, get: r => r.iter },
-      { label: "hL calc [m]", w: 82, get: r => fmtPlain(r.h_calc, 6) },
-      { label: "Error hL [m]", w: 82, get: r => fmtPlain(r.error, 6) },
+      { labelParts: [{t:"h"}, {t:"L,calc", sub:true}, {t:" [m]"}], w: 82, get: r => fmtPlain(r.h_calc, 6) },
+      { labelParts: [{t:"Error h"}, {t:"L", sub:true}, {t:" [m]"}], w: 82, get: r => fmtPlain(r.error, 6) },
       { label: "Error rel", w: 74, get: r => fmtPlain(r.error_rel, 8) },
       { label: "Factor", w: 62, get: r => fmtPlain(r.correction, 7) },
-      { label: "nu [m^2/s]", w: 78, get: r => fmtPlain(r.nu, 9) },
+      { labelParts: [{t:"nu [m"}, {t:"2", sup:true}, {t:"/s]"}], w: 78, get: r => fmtPlain(r.nu, 9) },
       { label: "mu [Pa*s]", w: 76, get: r => fmtPlain(r.mu, 6) },
-      { label: "f prom", w: 62, get: r => fmtPlain(r.f_avg, 6) },
-      { label: "Re min", w: 70, get: r => fmtPlain(r.re_min, 4) },
-      { label: "v tub max [m/s]", w: 104, get: r => fmtPlain(r.v_max, 5) }
+      { labelParts: [{t:"f"}, {t:"prom", sub:true}], w: 62, get: r => fmtPlain(r.f_avg, 6) },
+      { labelParts: [{t:"R"}, {t:"n,min", sub:true}], w: 70, get: r => fmtPlain(r.re_min, 4) },
+      { labelParts: [{t:"v"}, {t:"tub,max", sub:true}, {t:" [m/s]"}], w: 104, get: r => fmtPlain(r.v_max, 5) }
     ];
     drawSimpleTable(pdf, { x: 32, y, columns, rows: lastResult.iterations, rowHeight: 17, fontSize: 7.1, title: "Tabla de iteraciones" });
     downloadBlob(pdf.blob(), "oilsafe_iteraciones.pdf");
@@ -1976,7 +2292,10 @@ def calculate_from_json(raw):
     $("runButton").addEventListener("click", runCalculation);
     $("resetButton").addEventListener("click", resetExample);
     $("pdfButton").addEventListener("click", downloadIterationsPDF);
-    $("complaintButton").addEventListener("click", sendComplaints);
+    $("complaintButton").addEventListener("click", () => openWhatsAppComplaint("general"));
+    $("gasComplaintButton").addEventListener("click", () => openWhatsAppComplaint("gasolina"));
+    $("carbonComplaintButton").addEventListener("click", () => openWhatsAppComplaint("carbonilla"));
+    renderComplaintChart(getComplaintStats(), null);
     initPyodide();
   });
 </script>
