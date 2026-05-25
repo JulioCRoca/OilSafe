@@ -1,752 +1,1500 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Iteraciones con Pyodide - Ducha eléctrica termostática</title>
-
-  <!-- Pyodide: Python ejecutándose dentro del navegador -->
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OilSAFE | Estimación Iterativa de Viscosidad</title>
+  <meta name="description" content="Calculadora frontend con Pyodide para estimar viscosidad dinámica en un sistema de tuberías en serie mediante iteración de punto fijo desacoplado." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oxanium:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --panel2: #1f2937;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --accent: #38bdf8;
-      --accent2: #22c55e;
-      --danger: #ef4444;
-      --border: #374151;
-      --warning: #f59e0b;
+      --oil-orange: #f79c0b;
+      --oil-orange-2: #f86906;
+      --safe-blue: #075fe2;
+      --safe-cyan: #0d92f0;
+      --deep-blue: #082760;
+      --ink: #0c1222;
+      --muted: #687489;
+      --line: rgba(8, 39, 96, 0.12);
+      --bg: #f6f8fc;
+      --card: rgba(255, 255, 255, 0.88);
+      --shadow: 0 24px 60px rgba(8, 39, 96, 0.13);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --ok: #0f8b62;
+      --warn: #b7791f;
+      --bad: #c7362f;
+      --font-tech: "Oxanium", "Segoe UI", system-ui, sans-serif;
+      --font-main: "Inter", "Segoe UI", system-ui, sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
+    * { box-sizing: border-box; }
+
+    sub {
+      font-size: .72em;
+      line-height: 0;
+      vertical-align: sub;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: radial-gradient(circle at top, #1e293b 0%, #020617 60%);
-      color: var(--text);
+      color: var(--ink);
+      font-family: var(--font-main);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(247,156,11,.20), transparent 32%),
+        radial-gradient(circle at 100% 8%, rgba(7,95,226,.20), transparent 34%),
+        linear-gradient(180deg, #ffffff 0%, var(--bg) 36%, #eef4ff 100%);
       min-height: 100vh;
     }
 
-    header {
-      padding: 32px 20px 18px;
-      text-align: center;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .72;
+      background-image:
+        linear-gradient(rgba(7,95,226,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(7,95,226,.045) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 72%);
+      z-index: -2;
     }
 
-    header h1 {
+    .page-shell {
+      width: min(1220px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 20px 0 12px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .brand img {
+      width: 150px;
+      max-height: 58px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 16px rgba(7,95,226,.14));
+    }
+
+    .brand-text {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand-title {
+      font-family: var(--font-tech);
+      font-size: 1.04rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      color: var(--deep-blue);
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      font-size: .83rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 30px rgba(8, 39, 96, .08);
+      color: var(--deep-blue);
+      font-size: .86rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 0 4px rgba(247,156,11,.16);
+    }
+
+    .status-dot.ready {
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(15,139,98,.16);
+    }
+
+    .hero {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(330px, .82fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(135deg, rgba(8,39,96,.98), rgba(7,95,226,.82) 54%, rgba(13,146,240,.80)),
+        linear-gradient(45deg, var(--deep-blue), var(--safe-blue));
+      color: #fff;
+      min-height: 360px;
+      padding: clamp(28px, 5vw, 54px);
+      box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+
+    .hero-card::before,
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(2px);
+      z-index: -1;
+    }
+
+    .hero-card::before {
+      width: 330px;
+      height: 330px;
+      right: -120px;
+      top: -90px;
+      background: radial-gradient(circle, rgba(247,156,11,.90), rgba(248,105,6,.2) 48%, transparent 70%);
+    }
+
+    .hero-card::after {
+      width: 520px;
+      height: 120px;
+      left: -140px;
+      bottom: -38px;
+      transform: rotate(-8deg);
+      background: linear-gradient(90deg, rgba(248,105,6,.7), rgba(255,255,255,.12), rgba(13,146,240,.10));
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 18px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(10px);
+      color: rgba(255,255,255,.92);
+      font-size: .82rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-family: var(--font-tech);
       margin: 0;
-      font-size: clamp(1.7rem, 4vw, 3rem);
-      color: #f8fafc;
+      font-size: clamp(2.15rem, 5.6vw, 5.2rem);
+      line-height: .94;
+      letter-spacing: -.06em;
+      max-width: 840px;
     }
 
-    header p {
-      max-width: 920px;
-      margin: 12px auto 0;
+    .hero h1 span {
+      color: var(--oil-orange);
+      text-shadow: 0 12px 32px rgba(248,105,6,.34);
+    }
+
+    .hero-copy {
+      width: min(740px, 100%);
+      margin: 22px 0 0;
+      color: rgba(255,255,255,.86);
+      font-size: 1.05rem;
+      line-height: 1.68;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button {
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 18px;
+      font-family: var(--font-main);
+      font-size: .95rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease, background .18s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .button:active { transform: translateY(1px) scale(.99); }
+    .button:disabled { cursor: not-allowed; opacity: .58; transform: none; }
+
+    .button-primary {
+      background: linear-gradient(135deg, var(--oil-orange), var(--oil-orange-2));
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(248,105,6,.28);
+    }
+
+    .button-primary:not(:disabled):hover { box-shadow: 0 18px 36px rgba(248,105,6,.38); transform: translateY(-1px); }
+
+    .button-secondary {
+      background: rgba(255,255,255,.13);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.24);
+      backdrop-filter: blur(10px);
+    }
+
+    .button-light {
+      background: #fff;
+      color: var(--deep-blue);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 24px rgba(8,39,96,.08);
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .glass-card {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .metric-card {
+      position: relative;
+      min-height: 172px;
+    }
+
+    .metric-card::before {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      top: -92px;
+      right: -56px;
+      background: radial-gradient(circle, rgba(247,156,11,.30), rgba(7,95,226,.10), transparent 70%);
+    }
+
+    .card-kicker {
+      color: var(--safe-blue);
+      font-family: var(--font-tech);
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: .74rem;
+      margin-bottom: 10px;
+    }
+
+    .metric-title {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.2;
+      color: var(--deep-blue);
+      font-weight: 850;
+    }
+
+    .metric-text {
+      color: var(--muted);
+      margin: 12px 0 0;
+      line-height: 1.55;
+      font-size: .94rem;
+    }
+
+    .formula-card {
+      display: grid;
+      gap: 10px;
+      background: #091b3c;
+      color: white;
+    }
+
+    .formula-card code {
+      display: block;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.1);
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      overflow-x: auto;
+      white-space: nowrap;
+      color: #e9f4ff;
+    }
+
+    main { padding: 30px 0 70px; }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 20px;
+      margin: 38px 0 16px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      color: var(--deep-blue);
+      font-family: var(--font-tech);
+      font-size: clamp(1.5rem, 3.2vw, 2.35rem);
+      letter-spacing: -.04em;
+    }
+
+    .section-head p {
+      margin: 8px 0 0;
+      max-width: 730px;
       color: var(--muted);
       line-height: 1.6;
     }
 
-    main {
-      width: min(1280px, 96%);
-      margin: 0 auto 40px;
+    .grid {
       display: grid;
-      grid-template-columns: 390px 1fr;
-      gap: 22px;
-      align-items: start;
+      gap: 18px;
     }
 
-    .card {
-      background: rgba(17, 24, 39, 0.93);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .input-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.86);
+      box-shadow: 0 16px 45px rgba(8,39,96,.08);
+      padding: 22px;
       overflow: hidden;
     }
 
-    .card-title {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(31, 41, 55, 0.65);
-    }
-
-    .card-title h2 {
-      margin: 0;
+    .input-card h3 {
+      margin: 0 0 16px;
+      color: var(--deep-blue);
+      font-family: var(--font-tech);
       font-size: 1.1rem;
+      letter-spacing: -.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .card-title small {
-      display: block;
-      margin-top: 6px;
-      color: var(--muted);
-      line-height: 1.45;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(247,156,11,.22), rgba(7,95,226,.14));
+      color: var(--safe-blue);
+      font-weight: 900;
+      font-size: .82rem;
     }
 
-    .card-content {
-      padding: 20px;
-    }
-
-    .grid-form {
+    .field-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
     }
 
+    .field {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
     label {
-      font-size: 0.86rem;
-      color: #cbd5e1;
-      display: block;
-      margin-bottom: 6px;
+      color: #2b3850;
+      font-weight: 800;
+      font-size: .82rem;
+      letter-spacing: -.01em;
     }
 
-    input {
-      width: 100%;
-      padding: 10px 11px;
-      border-radius: 10px;
-      border: 1px solid #475569;
-      background: #020617;
-      color: #e5e7eb;
-      outline: none;
-    }
-
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
-    }
-
-    .full {
-      grid-column: 1 / -1;
-    }
-
-    button {
-      width: 100%;
-      padding: 13px 16px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #0284c7, #22c55e);
-      color: white;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 16px;
-      transition: transform .15s ease, opacity .15s ease;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      opacity: 0.94;
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .status {
-      margin-top: 14px;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #020617;
+    .hint {
       color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.45;
+      font-size: .78rem;
+      line-height: 1.4;
+      margin-top: -2px;
     }
 
-    .status.ok {
-      color: #bbf7d0;
-      border-color: rgba(34, 197, 94, 0.45);
-      background: rgba(34, 197, 94, 0.08);
-    }
-
-    .status.error {
-      color: #fecaca;
-      border-color: rgba(239, 68, 68, 0.55);
-      background: rgba(239, 68, 68, 0.08);
-    }
-
-    .formula {
-      background: #020617;
-      color: #dbeafe;
-      border: 1px solid var(--border);
+    input, select {
+      width: 100%;
+      min-width: 0;
+      height: 45px;
       border-radius: 14px;
-      padding: 16px;
-      line-height: 1.65;
-      overflow-x: auto;
-      font-family: "Consolas", "Courier New", monospace;
-      font-size: 0.9rem;
+      border: 1px solid rgba(8,39,96,.14);
+      background: rgba(255,255,255,.96);
+      color: var(--ink);
+      padding: 0 13px;
+      font-family: var(--font-main);
+      font-size: .94rem;
+      outline: none;
+      transition: border .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: rgba(7,95,226,.55);
+      box-shadow: 0 0 0 4px rgba(7,95,226,.11);
+    }
+
+    input[readonly] {
+      background: #eef5ff;
+      color: var(--deep-blue);
+      font-weight: 800;
+    }
+
+    .pipe-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
       margin-bottom: 16px;
     }
 
-    .summary {
+    .pipe-toolbar .field { width: min(240px, 100%); }
+
+    .pipe-list {
       display: grid;
-      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 16px;
+    }
+
+    .pipe-card {
+      position: relative;
+      border-radius: 24px;
+      padding: 20px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.94), rgba(244,249,255,.86));
+      border: 1px solid var(--line);
+      box-shadow: 0 14px 36px rgba(8,39,96,.08);
+    }
+
+    .pipe-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 6px;
+      border-radius: 24px 0 0 24px;
+      background: linear-gradient(var(--oil-orange), var(--safe-blue));
+    }
+
+    .pipe-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
 
-    .metric {
-      background: #020617;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
+    .pipe-title h4 {
+      margin: 0;
+      color: var(--deep-blue);
+      font-family: var(--font-tech);
+      font-size: 1rem;
+      letter-spacing: -.02em;
     }
 
-    .metric span {
-      display: block;
+    .unit-label {
+      color: var(--safe-blue);
+      font-weight: 900;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .result-card {
+      border-radius: 24px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255,255,255,.94), rgba(245,249,255,.86));
+      box-shadow: 0 16px 40px rgba(8,39,96,.08);
+      min-height: 130px;
+    }
+
+    .result-label {
       color: var(--muted);
-      font-size: 0.8rem;
-      margin-bottom: 6px;
+      font-weight: 850;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 12px;
     }
 
-    .metric strong {
-      font-size: 1.12rem;
-      color: #f8fafc;
+    .result-value {
+      color: var(--deep-blue);
+      font-family: var(--font-tech);
+      font-weight: 850;
+      letter-spacing: -.04em;
+      font-size: clamp(1.25rem, 2.4vw, 2rem);
+      word-break: break-word;
     }
 
-    .metric.good strong {
-      color: #86efac;
+    .result-sub {
+      color: var(--muted);
+      font-size: .82rem;
+      margin-top: 8px;
+      line-height: 1.4;
     }
 
-    .metric.warn strong {
-      color: #fbbf24;
+    .callout {
+      display: none;
+      margin: 18px 0 0;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(7,95,226,.15);
+      background: rgba(7,95,226,.07);
+      color: #143b74;
+      line-height: 1.55;
+      font-weight: 650;
+    }
+
+    .callout.show { display: block; }
+    .callout.warn { background: rgba(247,156,11,.10); border-color: rgba(247,156,11,.24); color: #6f4700; }
+    .callout.bad { background: rgba(199,54,47,.08); border-color: rgba(199,54,47,.22); color: #8a201b; }
+
+    .table-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.91);
+      box-shadow: var(--shadow);
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 22px;
+      background: linear-gradient(135deg, #0b2b65, #075fe2);
+      color: #fff;
+    }
+
+    .table-header h3 {
+      margin: 0;
+      font-family: var(--font-tech);
+      letter-spacing: -.02em;
+      font-size: 1.08rem;
+    }
+
+    .table-header p {
+      margin: 4px 0 0;
+      color: rgba(255,255,255,.72);
+      font-size: .86rem;
     }
 
     .table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      margin-bottom: 18px;
+      width: 100%;
+      overflow: auto;
+      max-height: 520px;
     }
 
     table {
       width: 100%;
+      min-width: 980px;
       border-collapse: collapse;
-      min-width: 940px;
-      background: #020617;
+      font-size: .86rem;
     }
 
-    th, td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #1f2937;
-      text-align: right;
-      white-space: nowrap;
-      font-size: 0.88rem;
-    }
-
-    th {
-      color: #bfdbfe;
-      background: #111827;
+    thead th {
       position: sticky;
       top: 0;
       z-index: 1;
+      background: #f2f7ff;
+      color: var(--deep-blue);
+      text-align: right;
+      padding: 12px 12px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
     }
 
-    td:first-child,
-    th:first-child {
-      text-align: center;
+    thead th:first-child, tbody td:first-child { text-align: center; }
+    tbody td {
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(8,39,96,.075);
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      color: #26334b;
     }
 
-    tr:hover td {
-      background: rgba(56, 189, 248, 0.055);
+    tbody tr:hover { background: rgba(13,146,240,.055); }
+    tbody tr:last-child { background: rgba(247,156,11,.09); font-weight: 800; }
+
+    .chart-box {
+      height: 260px;
+      padding: 18px 20px 22px;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #f6f9ff);
     }
 
-    .section-title {
-      margin: 22px 0 10px;
-      font-size: 1.05rem;
-      color: #f8fafc;
+    .chart-box svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .note-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
     }
 
     .note {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.78);
+      padding: 18px;
       color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.55;
-      margin-top: 10px;
+      line-height: 1.58;
     }
 
-    code {
-      color: #93c5fd;
+    .note strong { color: var(--deep-blue); }
+
+    footer {
+      padding: 24px 0 36px;
+      color: var(--muted);
+      font-size: .86rem;
+      text-align: center;
     }
 
-    @media (max-width: 1050px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-
-      .summary {
-        grid-template-columns: repeat(2, 1fr);
-      }
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid.two, .grid.three, .grid.four, .results-grid, .note-grid { grid-template-columns: 1fr; }
+      .section-head { align-items: flex-start; flex-direction: column; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .status-pill { white-space: normal; }
     }
 
-    @media (max-width: 560px) {
-      .grid-form {
-        grid-template-columns: 1fr;
-      }
-
-      .summary {
-        grid-template-columns: 1fr;
-      }
+    @media (max-width: 650px) {
+      .page-shell { width: min(100% - 20px, 1220px); }
+      .hero-card, .glass-card, .input-card { border-radius: 22px; padding: 20px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .brand img { width: 130px; }
+      .hero h1 { font-size: 2.35rem; }
+      .table-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>Iteraciones con Python dentro del navegador</h1>
-    <p>
-      Este ejemplo usa <strong>Pyodide</strong> para ejecutar Python en una página estática.
-      El tema elegido es una <strong>ducha eléctrica termostática</strong>: se calcula la temperatura
-      de salida resolviendo una ecuación no lineal de balance térmico mediante Newton-Raphson.
-    </p>
-  </header>
-
-  <main>
-    <section class="card">
-      <div class="card-title">
-        <h2>Datos de entrada</h2>
-        <small>Modifica los valores y presiona calcular. Todo se ejecuta localmente en tu navegador.</small>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="OilSAFE inicio">
+        <img src="assets/oilsafe-logo.png" alt="Logo OilSAFE" />
+        <span class="brand-text">
+          <span class="brand-title">OilSAFE</span>
+          <span class="brand-subtitle">Mecánica de Fluidos · Pyodide</span>
+        </span>
+      </a>
+      <div class="status-pill" id="pyStatus">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Cargando motor de cálculo Python…</span>
       </div>
+    </header>
 
-      <div class="card-content">
-        <div class="grid-form">
-          <div>
-            <label for="tin">Temperatura de entrada Tin [°C]</label>
-            <input id="tin" type="number" step="0.1" value="22" />
-          </div>
-
-          <div>
-            <label for="tamb">Temperatura ambiente Tamb [°C]</label>
-            <input id="tamb" type="number" step="0.1" value="25" />
-          </div>
-
-          <div>
-            <label for="flow">Caudal [L/min]</label>
-            <input id="flow" type="number" step="0.1" value="3.5" />
-          </div>
-
-          <div>
-            <label for="power">Potencia máxima [W]</label>
-            <input id="power" type="number" step="50" value="5500" />
-          </div>
-
-          <div>
-            <label for="duty">Porcentaje de activación [%]</label>
-            <input id="duty" type="number" step="1" value="80" />
-          </div>
-
-          <div>
-            <label for="eta0">Eficiencia nominal η₀</label>
-            <input id="eta0" type="number" step="0.01" value="0.92" />
-          </div>
-
-          <div>
-            <label for="u">Coef. global U [W/m²K]</label>
-            <input id="u" type="number" step="0.1" value="11" />
-          </div>
-
-          <div>
-            <label for="area">Área térmica A [m²]</label>
-            <input id="area" type="number" step="0.01" value="0.18" />
-          </div>
-
-          <div>
-            <label for="emiss">Emisividad ε</label>
-            <input id="emiss" type="number" step="0.01" value="0.82" />
-          </div>
-
-          <div>
-            <label for="guess">Suposición inicial T₀ [°C]</label>
-            <input id="guess" type="number" step="0.1" value="42" />
-          </div>
-
-          <div>
-            <label for="maxiter">Máx. iteraciones</label>
-            <input id="maxiter" type="number" step="1" value="18" />
-          </div>
-
-          <div>
-            <label for="tol">Tolerancia [°C]</label>
-            <input id="tol" type="number" step="0.000001" value="0.00001" />
-          </div>
-
-          <div class="full">
-            <button id="btnCalcular" disabled>Cargando Pyodide...</button>
-            <div id="status" class="status">Inicializando Python en el navegador...</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="card-title">
-        <h2>Resultados</h2>
-        <small>La tabla principal se genera desde Python y se renderiza con JavaScript.</small>
-      </div>
-
-      <div class="card-content">
-        <div class="formula">
-Balance no lineal resuelto por Newton-Raphson:<br><br>
-F(T) = ρ·Q·cp·(T − Tin) + U·A·(T − Tamb)
-       + ε·σ·A·[(T+273.15)^4 − (Tamb+273.15)^4]
-       − η(T)·Pmax·duty<br><br>
-η(T) = η₀ − 0.0009·max(T − Tin, 0)<br><br>
-Tₙ₊₁ = Tₙ − F(Tₙ) / F'(Tₙ)
-        </div>
-
-        <div id="summary" class="summary"></div>
-
-        <h3 class="section-title">Tabla 1: Newton-Raphson para el punto de operación</h3>
-        <div class="table-wrap">
-          <table id="tablaNewton">
-            <thead>
-              <tr>
-                <th>i</th>
-                <th>Tn [°C]</th>
-                <th>η(T)</th>
-                <th>Q agua [W]</th>
-                <th>Pérd. conv. [W]</th>
-                <th>Pérd. rad. [W]</th>
-                <th>F(T) [W]</th>
-                <th>F'(T) [W/°C]</th>
-                <th>Tn+1 [°C]</th>
-                <th>Error [°C]</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <h3 class="section-title">Tabla 2: Barrido de potencia por duty cycle</h3>
-        <div class="table-wrap">
-          <table id="tablaSweep">
-            <thead>
-              <tr>
-                <th>Duty [%]</th>
-                <th>Potencia útil aprox. [W]</th>
-                <th>T salida [°C]</th>
-                <th>ΔT [°C]</th>
-                <th>Q agua [W]</th>
-                <th>Pérdidas totales [W]</th>
-                <th>Iteraciones</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <p class="note">
-          Este archivo funciona bien en GitHub Pages porque no necesita backend. Python se ejecuta en el navegador con Pyodide.
-          La primera carga puede tardar un poco porque se descarga el runtime de Python/WebAssembly.
+    <section class="hero" id="top">
+      <div class="hero-card">
+        <p class="eyebrow">Estimación inversa de viscosidad</p>
+        <h1><span>Oil</span>SAFE<br>Calculadora iterativa</h1>
+        <p class="hero-copy">
+          Herramienta frontend para estimar la viscosidad dinámica de mezclas de aceite SAE 20W-50 a partir de pérdidas de carga en un sistema de tuberías en serie. El cálculo se ejecuta en el navegador con Pyodide, sin servidor externo.
         </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#calculadora">Configurar sistema</a>
+          <a class="button button-secondary" href="#resultados">Ver resultados</a>
+        </div>
       </div>
+
+      <aside class="hero-side">
+        <div class="glass-card metric-card">
+          <div class="card-kicker">Mezclas de trabajo</div>
+          <h2 class="metric-title">Aceite puro, aceite + gasolina y aceite + gasolina + carbonilla.</h2>
+          <p class="metric-text">El selector asigna automáticamente densidad y gravedad específica para usar esos datos en el balance de energía.</p>
+        </div>
+        <div class="glass-card formula-card">
+          <div class="card-kicker" style="color:#ffcf70;">Modelo base</div>
+          <code>h<sub>L,obj</sub> = ΔP / (ρ·g) + Δz + h<sub>A</sub></code>
+          <code>μ = ρ · ν</code>
+        </div>
+      </aside>
     </section>
-  </main>
 
-  <script>
-    let pyodide = null;
-
-    const btn = document.getElementById("btnCalcular");
-    const statusBox = document.getElementById("status");
-
-    function setStatus(text, type = "") {
-      statusBox.className = "status " + type;
-      statusBox.textContent = text;
-    }
-
-    async function iniciarPyodide() {
-      try {
-        pyodide = await loadPyodide();
-        btn.disabled = false;
-        btn.textContent = "Calcular iteraciones con Python";
-        setStatus("Pyodide cargado correctamente. Ya puedes ejecutar los cálculos.", "ok");
-      } catch (err) {
-        console.error(err);
-        setStatus("Error cargando Pyodide. Revisa tu conexión a internet o la consola del navegador.", "error");
-      }
-    }
-
-    function obtenerDatos() {
-      return {
-        tin: Number(document.getElementById("tin").value),
-        tamb: Number(document.getElementById("tamb").value),
-        flow_l_min: Number(document.getElementById("flow").value),
-        power: Number(document.getElementById("power").value),
-        duty: Number(document.getElementById("duty").value) / 100,
-        eta0: Number(document.getElementById("eta0").value),
-        U: Number(document.getElementById("u").value),
-        A: Number(document.getElementById("area").value),
-        emiss: Number(document.getElementById("emiss").value),
-        guess: Number(document.getElementById("guess").value),
-        maxiter: Number(document.getElementById("maxiter").value),
-        tol: Number(document.getElementById("tol").value)
-      };
-    }
-
-    function validar(datos) {
-      const errores = [];
-      if (datos.flow_l_min <= 0) errores.push("El caudal debe ser mayor que 0.");
-      if (datos.power <= 0) errores.push("La potencia debe ser mayor que 0.");
-      if (datos.duty <= 0 || datos.duty > 1) errores.push("El duty debe estar entre 1% y 100%.");
-      if (datos.eta0 <= 0 || datos.eta0 > 1) errores.push("La eficiencia nominal debe estar entre 0 y 1.");
-      if (datos.U < 0) errores.push("El coeficiente U no puede ser negativo.");
-      if (datos.A <= 0) errores.push("El área térmica debe ser mayor que 0.");
-      if (datos.emiss < 0 || datos.emiss > 1) errores.push("La emisividad debe estar entre 0 y 1.");
-      if (datos.maxiter < 1) errores.push("Debe haber al menos 1 iteración.");
-      if (datos.tol <= 0) errores.push("La tolerancia debe ser mayor que 0.");
-      return errores;
-    }
-
-    function fmt(x, dec = 4) {
-      if (x === null || x === undefined || Number.isNaN(Number(x))) return "-";
-      return Number(x).toFixed(dec);
-    }
-
-    function renderSummary(resultado) {
-      const s = resultado.summary;
-      const clsEstado = s.converged ? "good" : "warn";
-
-      document.getElementById("summary").innerHTML = `
-        <div class="metric ${clsEstado}">
-          <span>Temperatura de salida</span>
-          <strong>${fmt(s.final_temperature, 4)} °C</strong>
+    <main>
+      <section id="calculadora">
+        <div class="section-head">
+          <div>
+            <h2>1. Datos globales del sistema</h2>
+            <p>Define la mezcla, el sistema de unidades, la energía disponible y la cantidad de tramos. Para tanques abiertos a la atmósfera, usa ΔP = 0. Si no hay bomba, usa h<sub>A</sub> = 0.</p>
+          </div>
         </div>
-        <div class="metric">
-          <span>Incremento térmico</span>
-          <strong>${fmt(s.delta_T, 4)} °C</strong>
+
+        <div class="grid two">
+          <article class="input-card">
+            <h3><span class="badge">A</span> Propiedades del fluido</h3>
+            <div class="field-grid">
+              <div class="field full">
+                <label for="mixture">Mezcla de trabajo</label>
+                <select id="mixture">
+                  <option value="m1" data-rho="844.37" data-sg="0.84437">Foto 1 / Muestra 1 — aceite SAE 20W-50 puro</option>
+                  <option value="m2" data-rho="833.01" data-sg="0.83301">Foto 2 / Muestra 2 — 900 ml aceite + 100 ml gasolina</option>
+                  <option value="m3" data-rho="820.74" data-sg="0.82074">Foto 3 / Muestra 3 — aceite + gasolina + carbonilla</option>
+                </select>
+                <p class="hint">La densidad y la gravedad específica se asignan de forma invisible al cálculo.</p>
+              </div>
+              <div class="field">
+                <label for="rhoView">Densidad ρ [kg/m³]</label>
+                <input id="rhoView" type="text" readonly value="844.37" />
+              </div>
+              <div class="field">
+                <label for="sgView">Gravedad específica sg</label>
+                <input id="sgView" type="text" readonly value="0.84437" />
+              </div>
+              <div class="field full">
+                <label for="unitSystem">Sistema de unidades</label>
+                <select id="unitSystem">
+                  <option value="SI">Sistema Internacional — m, m³/s, Pa</option>
+                  <option value="EN">Sistema Inglés — ft, in, ft³/s, psi</option>
+                </select>
+              </div>
+            </div>
+          </article>
+
+          <article class="input-card">
+            <h3><span class="badge">B</span> Balance de energía</h3>
+            <div class="field-grid">
+              <div class="field">
+                <label for="flowRate">Caudal Q <span class="unit-label" data-unit="flow">[m³/s]</span></label>
+                <input id="flowRate" type="number" value="0.0141667" step="any" min="0" />
+              </div>
+              <div class="field">
+                <label for="pumpHead">Carga de bomba h<sub>A</sub> <span class="unit-label" data-unit="head">[m]</span></label>
+                <input id="pumpHead" type="number" value="191.25" step="any" />
+              </div>
+              <div class="field">
+                <label for="deltaZ">Diferencia de altura Δz <span class="unit-label" data-unit="head">[m]</span></label>
+                <input id="deltaZ" type="number" value="0" step="any" />
+              </div>
+              <div class="field">
+                <label for="deltaP">Diferencia de presión ΔP <span class="unit-label" data-unit="pressure">[Pa]</span></label>
+                <input id="deltaP" type="number" value="0" step="any" />
+              </div>
+              <div class="field">
+                <label for="nuInitial">ν inicial [m²/s]</label>
+                <input id="nuInitial" type="number" value="0.0000013" step="any" min="1e-12" />
+              </div>
+              <div class="field">
+                <label for="tolerance">Tolerancia relativa</label>
+                <input id="tolerance" type="number" value="0.00001" step="any" min="1e-12" />
+              </div>
+              <div class="field">
+                <label for="maxIter">Máx. iteraciones</label>
+                <input id="maxIter" type="number" value="80" step="1" min="1" max="1000" />
+              </div>
+              <div class="field">
+                <label for="relaxation">Relajación α</label>
+                <input id="relaxation" type="number" value="0.85" step="0.01" min="0.05" max="1" />
+              </div>
+            </div>
+          </article>
         </div>
-        <div class="metric">
-          <span>Iteraciones usadas</span>
-          <strong>${s.iterations}</strong>
+
+        <div class="section-head">
+          <div>
+            <h2>2. Tramos de tubería en serie</h2>
+            <p>Cada bloque representa un tramo. El caudal es el mismo en todos los tramos; el cálculo desacopla el factor de fricción por tramo y ajusta la viscosidad cinemática hasta igualar la pérdida de carga objetivo.</p>
+          </div>
         </div>
-        <div class="metric ${clsEstado}">
-          <span>Estado</span>
-          <strong>${s.converged ? "Convergió" : "No convergió"}</strong>
+
+        <article class="input-card">
+          <div class="pipe-toolbar">
+            <h3 style="margin:0;"><span class="badge">C</span> Datos dinámicos por tubería</h3>
+            <div class="field">
+              <label for="pipeCount">Cantidad de tuberías</label>
+              <input id="pipeCount" type="number" value="3" min="1" max="30" step="1" />
+            </div>
+          </div>
+          <div id="pipeContainer" class="pipe-list"></div>
+          <div class="hero-actions" style="margin-top:22px;">
+            <button class="button button-primary" id="runButton" disabled>Calcular viscosidad dinámica</button>
+            <button class="button button-light" id="resetButton" type="button">Restaurar ejemplo</button>
+            <button class="button button-light" id="csvButton" type="button" disabled>Descargar iteraciones CSV</button>
+          </div>
+          <div class="callout" id="messageBox"></div>
+        </article>
+      </section>
+
+      <section id="resultados">
+        <div class="section-head">
+          <div>
+            <h2>3. Resultados</h2>
+            <p>La tabla muestra todas las iteraciones realizadas. El valor final de viscosidad dinámica se calcula como μ = ρ·ν.</p>
+          </div>
         </div>
-      `;
-    }
 
-    function renderNewton(rows) {
-      const tbody = document.querySelector("#tablaNewton tbody");
-      tbody.innerHTML = rows.map(r => `
-        <tr>
-          <td>${r.i}</td>
-          <td>${fmt(r.Tn, 6)}</td>
-          <td>${fmt(r.eta, 6)}</td>
-          <td>${fmt(r.q_water, 3)}</td>
-          <td>${fmt(r.loss_conv, 3)}</td>
-          <td>${fmt(r.loss_rad, 3)}</td>
-          <td>${fmt(r.F, 6)}</td>
-          <td>${fmt(r.dF, 6)}</td>
-          <td>${fmt(r.Tnext, 6)}</td>
-          <td>${fmt(r.error, 8)}</td>
-        </tr>
-      `).join("");
-    }
+        <div class="results-grid" aria-live="polite">
+          <div class="result-card">
+            <div class="result-label">h<sub>L,objetivo</sub></div>
+            <div class="result-value" id="outTarget">—</div>
+            <div class="result-sub">Pérdida de carga requerida por energía.</div>
+          </div>
+          <div class="result-card">
+            <div class="result-label">ν final</div>
+            <div class="result-value" id="outNu">—</div>
+            <div class="result-sub">Viscosidad cinemática estimada.</div>
+          </div>
+          <div class="result-card">
+            <div class="result-label">μ final</div>
+            <div class="result-value" id="outMu">—</div>
+            <div class="result-sub">Viscosidad dinámica del fluido.</div>
+          </div>
+          <div class="result-card">
+            <div class="result-label">Convergencia</div>
+            <div class="result-value" id="outStatus">—</div>
+            <div class="result-sub" id="outStatusText">Ejecuta el cálculo para generar el reporte.</div>
+          </div>
+        </div>
 
-    function renderSweep(rows) {
-      const tbody = document.querySelector("#tablaSweep tbody");
-      tbody.innerHTML = rows.map(r => `
-        <tr>
-          <td>${fmt(r.duty_percent, 0)}</td>
-          <td>${fmt(r.power_useful_approx, 2)}</td>
-          <td>${fmt(r.temperature, 4)}</td>
-          <td>${fmt(r.delta_T, 4)}</td>
-          <td>${fmt(r.q_water, 2)}</td>
-          <td>${fmt(r.total_losses, 2)}</td>
-          <td>${r.iterations}</td>
-          <td>${r.converged ? "Convergió" : "No convergió"}</td>
-        </tr>
-      `).join("");
-    }
+        <div style="height:18px"></div>
 
-    async function calcular() {
-      if (!pyodide) {
-        setStatus("Pyodide todavía no terminó de cargar.", "error");
-        return;
-      }
+        <div class="table-card">
+          <div class="table-header">
+            <div>
+              <h3>Tabla de iteraciones</h3>
+              <p id="tableSubtitle">Sin datos calculados todavía.</p>
+            </div>
+            <div class="status-pill" style="background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.24); box-shadow:none;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#ffcf70;display:inline-block;"></span>
+              Punto fijo desacoplado
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Iter.</th>
+                  <th>h<sub>L,calc.</sub> [m]</th>
+                  <th>Error h<sub>L</sub> [m]</th>
+                  <th>Error rel.</th>
+                  <th>Factor</th>
+                  <th>ν [m²/s]</th>
+                  <th>μ [Pa·s]</th>
+                  <th>f<sub>prom.</sub></th>
+                  <th>Re<sub>mín.</sub></th>
+                  <th>v<sub>máx.</sub> [m/s]</th>
+                </tr>
+              </thead>
+              <tbody id="iterationBody">
+                <tr><td colspan="10" style="text-align:center;color:#687489;">Presiona “Calcular viscosidad dinámica”.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="chart-box" id="chartBox">
+            <svg viewBox="0 0 1000 260" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia vacía">
+              <text x="500" y="138" text-anchor="middle" fill="#687489" font-size="22" font-family="Inter, sans-serif">La curva de convergencia aparecerá aquí</text>
+            </svg>
+          </div>
+        </div>
+      </section>
 
-      const datos = obtenerDatos();
-      const errores = validar(datos);
+      <section>
+        <div class="section-head">
+          <div>
+            <h2>Notas de uso</h2>
+          </div>
+        </div>
+        <div class="note-grid">
+          <div class="note"><strong>Convención de ΔP:</strong> se usa directamente la fórmula h<sub>L,obj</sub> = ΔP/(ρ·g) + Δz + h<sub>A</sub>. Ingresa ΔP con el signo que corresponda al planteamiento entre punto inicial y punto final.</div>
+          <div class="note"><strong>Unidades internas:</strong> aunque selecciones sistema inglés, el cálculo convierte todo a SI y reporta μ en Pa·s, que es la unidad principal para viscosidad dinámica.</div>
+        </div>
+      </section>
+    </main>
 
-      if (errores.length > 0) {
-        setStatus(errores.join(" "), "error");
-        return;
-      }
+    <footer>
+      OilSAFE · Calculadora frontend con Pyodide · Archivos esperados: <strong>index.html</strong> y <strong>assets/oilsafe-logo.png</strong>
+    </footer>
+  </div>
 
-      btn.disabled = true;
-      btn.textContent = "Calculando con Python...";
-      setStatus("Ejecutando Newton-Raphson y barrido paramétrico desde Python...", "");
+<script id="python-code" type="text/python">
+import json, math
 
-      try {
-        pyodide.globals.set("input_data_json", JSON.stringify(datos));
+G = 9.80665
 
-        const code = `
-import json
-import math
-data = json.loads(input_data_json)
+class CalculationError(Exception):
+    pass
 
-rho = 997.0                 # kg/m3, agua cerca de temperatura ambiente
-cp = 4186.0                 # J/(kg*K), calor específico del agua
-sigma = 5.670374419e-8      # W/(m2*K4), constante de Stefan-Boltzmann
+def _to_float(value, name, positive=False, nonnegative=False):
+    try:
+        x = float(value)
+    except Exception:
+        raise CalculationError(f"El valor de {name} no es numérico.")
+    if positive and not (x > 0):
+        raise CalculationError(f"El valor de {name} debe ser mayor que cero.")
+    if nonnegative and not (x >= 0):
+        raise CalculationError(f"El valor de {name} no puede ser negativo.")
+    if not math.isfinite(x):
+        raise CalculationError(f"El valor de {name} no es finito.")
+    return x
 
-tin = float(data["tin"])
-tamb = float(data["tamb"])
-flow_l_min = float(data["flow_l_min"])
-power = float(data["power"])
-duty = float(data["duty"])
-eta0 = float(data["eta0"])
-U = float(data["U"])
-A = float(data["A"])
-emiss = float(data["emiss"])
-guess = float(data["guess"])
-maxiter = int(data["maxiter"])
-tol = float(data["tol"])
+def colebrook_white(Re, eps, D):
+    """Factor de fricción Darcy. Laminar: 64/Re. Turbulento: Colebrook-White iterativo.
+    En transición se mezcla suavemente entre ambos modelos para evitar saltos numéricos.
+    """
+    Re = abs(Re)
+    if Re < 1e-12:
+        return 0.0
+    f_lam = 64.0 / Re
+    if Re <= 2300.0:
+        return f_lam
 
-# Conversión de caudal:
-# L/min -> m3/s
-Qv = flow_l_min / 1000.0 / 60.0
-mdot = rho * Qv
+    rel = max(eps / max(D, 1e-12), 0.0)
+    try:
+        f_turb = 0.25 / (math.log10(rel / 3.7 + 5.74 / (Re ** 0.9)) ** 2)
+    except Exception:
+        f_turb = 0.02
 
-def eta(T):
-    # Modelo simple: a mayor temperatura de operación, ligera reducción de eficiencia.
-    # Se limita para evitar valores físicamente absurdos.
-    return max(0.40, min(0.99, eta0 - 0.0009 * max(T - tin, 0.0)))
+    f_turb = min(max(f_turb, 1e-6), 1.0)
+    for _ in range(18):
+        denom = rel / 3.7 + 2.51 / (Re * math.sqrt(f_turb))
+        if denom <= 0:
+            break
+        inv_sqrt = -2.0 * math.log10(denom)
+        if inv_sqrt <= 0:
+            break
+        f_new = 1.0 / (inv_sqrt * inv_sqrt)
+        if abs(f_new - f_turb) < 1e-10:
+            f_turb = f_new
+            break
+        f_turb = 0.55 * f_turb + 0.45 * f_new
 
-def deta_dT(T):
-    if T > tin:
-        return -0.0009
-    return 0.0
+    if Re < 4000.0:
+        w = (Re - 2300.0) / (4000.0 - 2300.0)
+        return (1.0 - w) * f_lam + w * f_turb
+    return f_turb
 
-def terms(T, local_duty):
-    TK = T + 273.15
-    TambK = tamb + 273.15
-
-    q_water = mdot * cp * (T - tin)
-    loss_conv = U * A * (T - tamb)
-    loss_rad = emiss * sigma * A * (TK**4 - TambK**4)
-    useful_power = eta(T) * power * local_duty
-
-    F = q_water + loss_conv + loss_rad - useful_power
-
-    # Derivada analítica:
-    # d/dT [mdot*cp*(T-Tin)] = mdot*cp
-    # d/dT [U*A*(T-Tamb)] = U*A
-    # d/dT [eps*sigma*A*((T+273.15)^4 - cte)] = eps*sigma*A*4*(T+273.15)^3
-    # d/dT [-eta(T)*P*duty] = -eta'(T)*P*duty
-    dF = mdot * cp + U * A + emiss * sigma * A * 4.0 * TK**3 - deta_dT(T) * power * local_duty
-
-    return q_water, loss_conv, loss_rad, useful_power, F, dF
-
-def solve_newton(local_duty, local_guess=guess):
-    T = local_guess
+def model_head_loss(nu, Q, pipes):
+    total_h = 0.0
     rows = []
-    converged = False
-
-    for i in range(1, maxiter + 1):
-        q_water, loss_conv, loss_rad, useful_power, F, dF = terms(T, local_duty)
-
-        if abs(dF) < 1e-12:
-            rows.append({
-                "i": i, "Tn": T, "eta": eta(T), "q_water": q_water,
-                "loss_conv": loss_conv, "loss_rad": loss_rad, "F": F,
-                "dF": dF, "Tnext": T, "error": None
-            })
-            break
-
-        Tnext = T - F / dF
-        error = abs(Tnext - T)
-
+    for idx, p in enumerate(pipes, start=1):
+        L = p["L"]
+        D = p["D"]
+        K = p["K"]
+        eps = p["eps"]
+        A = math.pi * D * D / 4.0
+        v = Q / A
+        Re = abs(v) * D / max(nu, 1e-18)
+        f = colebrook_white(Re, eps, D)
+        v_head = (v * v) / (2.0 * G)
+        h_major = f * (L / D) * v_head
+        h_minor = K * v_head
+        h_total = h_major + h_minor
+        total_h += h_total
         rows.append({
-            "i": i,
-            "Tn": T,
-            "eta": eta(T),
-            "q_water": q_water,
-            "loss_conv": loss_conv,
-            "loss_rad": loss_rad,
-            "F": F,
-            "dF": dF,
-            "Tnext": Tnext,
-            "error": error
+            "pipe": idx,
+            "v": v,
+            "Re": Re,
+            "f": f,
+            "h_major": h_major,
+            "h_minor": h_minor,
+            "h_total": h_total,
         })
+    return total_h, rows
 
-        T = Tnext
+def calculate_from_json(raw):
+    try:
+        data = json.loads(raw)
+        unit = data.get("unit", "SI")
+        rho = _to_float(data.get("rho"), "densidad", positive=True)
+        Q = _to_float(data.get("Q"), "caudal", positive=True)
+        hA = _to_float(data.get("hA"), "carga de bomba")
+        dz = _to_float(data.get("dz"), "diferencia de altura")
+        dP = _to_float(data.get("dP"), "diferencia de presión")
+        nu = _to_float(data.get("nu0", 1.3e-6), "viscosidad cinemática inicial", positive=True)
+        tol = _to_float(data.get("tol", 1e-5), "tolerancia", positive=True)
+        max_iter = int(_to_float(data.get("maxIter", 80), "máximo de iteraciones", positive=True))
+        alpha = _to_float(data.get("alpha", 0.85), "relajación", positive=True)
+        alpha = min(max(alpha, 0.05), 1.0)
 
-        if error < tol:
-            converged = True
-            break
+        if unit == "EN":
+            Q = Q * 0.028316846592       # ft³/s -> m³/s
+            hA = hA * 0.3048             # ft -> m
+            dz = dz * 0.3048             # ft -> m
+            dP = dP * 6894.757293168     # psi -> Pa
 
-    q_water, loss_conv, loss_rad, useful_power, F, dF = terms(T, local_duty)
+        pipes = []
+        for i, p in enumerate(data.get("pipes", []), start=1):
+            L = _to_float(p.get("L"), f"longitud del tramo {i}", positive=True)
+            D = _to_float(p.get("D"), f"diámetro del tramo {i}", positive=True)
+            K = _to_float(p.get("K"), f"sumatoria K del tramo {i}", nonnegative=True)
+            eps = _to_float(p.get("eps"), f"rugosidad del tramo {i}", nonnegative=True)
+            if unit == "EN":
+                L = L * 0.3048           # ft -> m
+                D = D * 0.0254           # in -> m
+                eps = eps * 0.0254       # in -> m
+            if eps >= D * 0.2:
+                raise CalculationError(f"La rugosidad del tramo {i} es demasiado grande respecto al diámetro.")
+            pipes.append({"L": L, "D": D, "K": K, "eps": eps})
 
-    summary = {
-        "final_temperature": T,
-        "delta_T": T - tin,
-        "iterations": len(rows),
-        "converged": converged,
-        "q_water": q_water,
-        "loss_conv": loss_conv,
-        "loss_rad": loss_rad,
-        "total_losses": loss_conv + loss_rad,
-        "useful_power": useful_power,
-        "residual": F
+        if not pipes:
+            raise CalculationError("Debe existir al menos una tubería.")
+
+        h_target = dP / (rho * G) + dz + hA
+        if h_target <= 0:
+            raise CalculationError("La pérdida de carga objetivo debe ser positiva. Revisa ΔP, Δz y hₐ.")
+
+        iterations = []
+        converged = False
+        note = ""
+        last_detail = []
+        correction_exp = 0.80
+
+        for it in range(1, max_iter + 1):
+            h_calc, detail = model_head_loss(nu, Q, pipes)
+            last_detail = detail
+            error = h_target - h_calc
+            error_rel = error / h_target
+            correction = h_target / h_calc if h_calc > 0 else float("inf")
+            mu = rho * nu
+            f_avg = sum(d["f"] for d in detail) / len(detail)
+            re_min = min(d["Re"] for d in detail)
+            v_max = max(abs(d["v"]) for d in detail)
+            iterations.append({
+                "iter": it,
+                "h_calc": h_calc,
+                "error": error,
+                "error_rel": error_rel,
+                "correction": correction,
+                "nu": nu,
+                "mu": mu,
+                "f_avg": f_avg,
+                "re_min": re_min,
+                "v_max": v_max,
+            })
+            if abs(error_rel) <= tol:
+                converged = True
+                break
+            if correction <= 0 or not math.isfinite(correction):
+                raise CalculationError("No se pudo calcular el factor de corrección. Revisa los datos de entrada.")
+            nu_candidate = nu * (correction ** correction_exp)
+            nu_candidate = min(max(nu_candidate, 1e-12), 25.0)
+            nu_next = (1.0 - alpha) * nu + alpha * nu_candidate
+            if abs(nu_next - nu) / max(abs(nu), 1e-18) < 1e-12:
+                note = "El método se estabilizó antes de cumplir la tolerancia. Revisa si hₗ objetivo es físicamente alcanzable con la geometría ingresada."
+                break
+            nu = nu_next
+
+        final = iterations[-1]
+        if not converged and not note:
+            note = "Se alcanzó el máximo de iteraciones sin cumplir la tolerancia. Puedes aumentar iteraciones, ajustar α o revisar el balance de energía."
+
+        return json.dumps({
+            "ok": True,
+            "converged": converged,
+            "note": note,
+            "unit_internal": "SI",
+            "rho": rho,
+            "sg": rho / 1000.0,
+            "h_target": h_target,
+            "nu": final["nu"],
+            "mu": final["mu"],
+            "iterations_count": len(iterations),
+            "final_error_rel": final["error_rel"],
+            "final_error_abs": final["error"],
+            "pipe_detail": last_detail,
+            "iterations": iterations,
+        })
+    except Exception as exc:
+        return json.dumps({"ok": False, "error": str(exc)})
+</script>
+
+<script>
+  const MATERIALS = {
+    "PVC liso": { eps_m: 1.5e-6, eps_in: 1.5e-6 / 0.0254 },
+    "Acero comercial": { eps_m: 4.6e-5, eps_in: 4.6e-5 / 0.0254 },
+    "Acero galvanizado": { eps_m: 1.5e-4, eps_in: 1.5e-4 / 0.0254 },
+    "Cobre / latón": { eps_m: 1.5e-6, eps_in: 1.5e-6 / 0.0254 },
+    "Manguera lisa": { eps_m: 1.0e-5, eps_in: 1.0e-5 / 0.0254 },
+    "Personalizado": { eps_m: 4.6e-5, eps_in: 4.6e-5 / 0.0254 }
+  };
+
+  const DEFAULT_PIPES = [
+    { L: 0.25, D: 0.0525, K: 5.00, material: "Personalizado", eps: 4.6e-5 },
+    { L: 0.30, D: 0.1050, K: 4.56, material: "Personalizado", eps: 5.8e-5 },
+    { L: 0.45, D: 0.1500, K: 4.00, material: "Personalizado", eps: 7.0e-5 }
+  ];
+
+  let pyodide = null;
+  let lastResult = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function fmt(x, digits = 6) {
+    if (x === null || x === undefined || Number.isNaN(Number(x))) return "—";
+    const n = Number(x);
+    if (!Number.isFinite(n)) return "—";
+    if (Math.abs(n) !== 0 && (Math.abs(n) < 0.001 || Math.abs(n) >= 100000)) return n.toExponential(4);
+    return n.toLocaleString("es-BO", { maximumFractionDigits: digits });
+  }
+
+  function updateMixtureInfo() {
+    const selected = $("mixture").selectedOptions[0];
+    $("rhoView").value = selected.dataset.rho;
+    $("sgView").value = selected.dataset.sg;
+  }
+
+  function updateUnitLabels() {
+    const en = $("unitSystem").value === "EN";
+    document.querySelectorAll('[data-unit="flow"]').forEach(el => el.textContent = en ? "[ft³/s]" : "[m³/s]");
+    document.querySelectorAll('[data-unit="head"]').forEach(el => el.textContent = en ? "[ft]" : "[m]");
+    document.querySelectorAll('[data-unit="pressure"]').forEach(el => el.textContent = en ? "[psi]" : "[Pa]");
+    document.querySelectorAll('[data-unit="length"]').forEach(el => el.textContent = en ? "[ft]" : "[m]");
+    document.querySelectorAll('[data-unit="diameter"]').forEach(el => el.textContent = en ? "[in]" : "[m]");
+    document.querySelectorAll('[data-unit="roughness"]').forEach(el => el.textContent = en ? "[in]" : "[m]");
+  }
+
+  function materialOptions(selected) {
+    return Object.keys(MATERIALS).map(name => `<option value="${name}" ${name === selected ? "selected" : ""}>${name}</option>`).join("");
+  }
+
+  function pipeTemplate(i, data = {}) {
+    const L = data.L ?? "";
+    const D = data.D ?? "";
+    const K = data.K ?? 0;
+    const material = data.material ?? "Acero comercial";
+    const eps = data.eps ?? MATERIALS[material].eps_m;
+    return `
+      <div class="pipe-card" data-pipe="${i}">
+        <div class="pipe-title">
+          <h4>Tramo ${i}</h4>
+          <span class="hint">Pérdidas mayores + menores</span>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Longitud L <span class="unit-label" data-unit="length">[m]</span></label>
+            <input class="pipe-L" type="number" value="${L}" step="any" min="0" />
+          </div>
+          <div class="field">
+            <label>Diámetro D <span class="unit-label" data-unit="diameter">[m]</span></label>
+            <input class="pipe-D" type="number" value="${D}" step="any" min="0" />
+          </div>
+          <div class="field">
+            <label>Material</label>
+            <select class="pipe-material">${materialOptions(material)}</select>
+          </div>
+          <div class="field">
+            <label>Rugosidad ε <span class="unit-label" data-unit="roughness">[m]</span></label>
+            <input class="pipe-eps" type="number" value="${eps}" step="any" min="0" />
+          </div>
+          <div class="field full">
+            <label>Pérdidas menores ΣK</label>
+            <input class="pipe-K" type="number" value="${K}" step="any" min="0" />
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function generatePipes(useDefaults = false) {
+    const count = Math.max(1, Math.min(30, parseInt($("pipeCount").value || "1", 10)));
+    $("pipeCount").value = count;
+    const container = $("pipeContainer");
+    container.innerHTML = Array.from({ length: count }, (_, idx) => {
+      const data = useDefaults ? (DEFAULT_PIPES[idx] || { L: 0.2, D: 0.05, K: 0, material: "Acero comercial", eps: 4.6e-5 }) : readExistingPipe(idx + 1);
+      return pipeTemplate(idx + 1, data);
+    }).join("");
+
+    container.querySelectorAll(".pipe-material").forEach(sel => {
+      sel.addEventListener("change", (ev) => {
+        const card = ev.target.closest(".pipe-card");
+        const epsInput = card.querySelector(".pipe-eps");
+        const unit = $("unitSystem").value;
+        const m = MATERIALS[ev.target.value];
+        epsInput.value = unit === "EN" ? m.eps_in : m.eps_m;
+      });
+    });
+    updateUnitLabels();
+  }
+
+  function readExistingPipe(i) {
+    const card = document.querySelector(`.pipe-card[data-pipe="${i}"]`);
+    if (!card) return DEFAULT_PIPES[i - 1] || { L: 0.2, D: 0.05, K: 0, material: "Acero comercial", eps: 4.6e-5 };
+    return {
+      L: card.querySelector(".pipe-L").value,
+      D: card.querySelector(".pipe-D").value,
+      K: card.querySelector(".pipe-K").value,
+      material: card.querySelector(".pipe-material").value,
+      eps: card.querySelector(".pipe-eps").value
+    };
+  }
+
+  function resetExample() {
+    $("mixture").value = "m1";
+    $("unitSystem").value = "SI";
+    $("flowRate").value = "0.0141667";
+    $("pumpHead").value = "191.25";
+    $("deltaZ").value = "0";
+    $("deltaP").value = "0";
+    $("nuInitial").value = "0.0000013";
+    $("tolerance").value = "0.00001";
+    $("maxIter").value = "80";
+    $("relaxation").value = "0.85";
+    $("pipeCount").value = "3";
+    updateMixtureInfo();
+    generatePipes(true);
+    clearResults();
+  }
+
+  function gatherData() {
+    const selected = $("mixture").selectedOptions[0];
+    const pipes = [...document.querySelectorAll(".pipe-card")].map((card, index) => ({
+      L: card.querySelector(".pipe-L").value,
+      D: card.querySelector(".pipe-D").value,
+      K: card.querySelector(".pipe-K").value,
+      eps: card.querySelector(".pipe-eps").value,
+      material: card.querySelector(".pipe-material").value,
+      index: index + 1
+    }));
+    return {
+      mixture: $("mixture").value,
+      rho: selected.dataset.rho,
+      sg: selected.dataset.sg,
+      unit: $("unitSystem").value,
+      Q: $("flowRate").value,
+      hA: $("pumpHead").value,
+      dz: $("deltaZ").value,
+      dP: $("deltaP").value,
+      nu0: $("nuInitial").value,
+      tol: $("tolerance").value,
+      maxIter: $("maxIter").value,
+      alpha: $("relaxation").value,
+      pipes
+    };
+  }
+
+  function setMessage(text, type = "info") {
+    const box = $("messageBox");
+    box.className = "callout show" + (type === "warn" ? " warn" : type === "bad" ? " bad" : "");
+    box.textContent = text;
+  }
+
+  function clearMessage() {
+    const box = $("messageBox");
+    box.className = "callout";
+    box.textContent = "";
+  }
+
+  async function runCalculation() {
+    clearMessage();
+    if (!pyodide) {
+      setMessage("Pyodide aún no terminó de cargar. Espera unos segundos y vuelve a calcular.", "warn");
+      return;
     }
-
-    return rows, summary
-
-main_rows, main_summary = solve_newton(duty, guess)
-
-# Barrido paramétrico para comparar cómo responde el sistema con distintos porcentajes de activación.
-sweep_rows = []
-for d in [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]:
-    rows, summary = solve_newton(d, guess)
-    sweep_rows.append({
-        "duty_percent": d * 100.0,
-        "power_useful_approx": eta(summary["final_temperature"]) * power * d,
-        "temperature": summary["final_temperature"],
-        "delta_T": summary["delta_T"],
-        "q_water": summary["q_water"],
-        "total_losses": summary["total_losses"],
-        "iterations": summary["iterations"],
-        "converged": summary["converged"]
-    })
-
-result = {
-    "summary": main_summary,
-    "newton_rows": main_rows,
-    "sweep_rows": sweep_rows
-}
-
-json.dumps(result)
-        `;
-
-        const resultText = await pyodide.runPythonAsync(code);
-        const result = JSON.parse(resultText);
-
-        renderSummary(result);
-        renderNewton(result.newton_rows);
-        renderSweep(result.sweep_rows);
-
-        const residual = result.summary.residual;
-        setStatus(
-          `Cálculo completado. Residual final F(T) = ${Number(residual).toExponential(4)} W.`,
-          result.summary.converged ? "ok" : ""
-        );
-      } catch (err) {
-        console.error(err);
-        setStatus("Ocurrió un error ejecutando Python. Revisa la consola. Si abriste el archivo con file://, pruébalo con un servidor local o GitHub Pages.", "error");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Calcular iteraciones con Python";
+    $("runButton").disabled = true;
+    $("runButton").textContent = "Calculando…";
+    try {
+      const data = gatherData();
+      pyodide.globals.set("input_json", JSON.stringify(data));
+      const raw = pyodide.runPython("calculate_from_json(input_json)");
+      const result = JSON.parse(raw);
+      if (!result.ok) {
+        throw new Error(result.error || "Error desconocido en el cálculo.");
       }
+      lastResult = result;
+      renderResults(result);
+      $("csvButton").disabled = false;
+      if (result.converged) {
+        setMessage(`Cálculo completado: convergió en ${result.iterations_count} iteraciones con error relativo final de ${fmt(result.final_error_rel, 8)}.`, "info");
+      } else {
+        setMessage(result.note || "El cálculo terminó sin convergencia estricta.", "warn");
+      }
+      document.querySelector("#resultados").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (err) {
+      clearResults();
+      setMessage(err.message, "bad");
+    } finally {
+      $("runButton").disabled = false;
+      $("runButton").textContent = "Calcular viscosidad dinámica";
     }
+  }
 
-    btn.addEventListener("click", calcular);
-    iniciarPyodide();
-  </script>
+  function renderResults(result) {
+    $("outTarget").textContent = `${fmt(result.h_target, 5)} m`;
+    $("outNu").textContent = `${fmt(result.nu, 8)} m²/s`;
+    $("outMu").textContent = `${fmt(result.mu, 6)} Pa·s`;
+    $("outStatus").textContent = result.converged ? "OK" : "Revisar";
+    $("outStatus").style.color = result.converged ? "var(--ok)" : "var(--warn)";
+    $("outStatusText").textContent = `${result.iterations_count} iteraciones · error relativo final ${fmt(result.final_error_rel, 8)}`;
+    renderTable(result.iterations);
+    renderChart(result.iterations, result.h_target);
+  }
+
+  function renderTable(iterations) {
+    $("tableSubtitle").textContent = `${iterations.length} iteraciones generadas. Se muestran todas dentro del contenedor desplazable.`;
+    $("iterationBody").innerHTML = iterations.map(row => `
+      <tr>
+        <td>${row.iter}</td>
+        <td>${fmt(row.h_calc, 6)}</td>
+        <td>${fmt(row.error, 6)}</td>
+        <td>${fmt(row.error_rel, 8)}</td>
+        <td>${fmt(row.correction, 7)}</td>
+        <td>${fmt(row.nu, 9)}</td>
+        <td>${fmt(row.mu, 6)}</td>
+        <td>${fmt(row.f_avg, 6)}</td>
+        <td>${fmt(row.re_min, 4)}</td>
+        <td>${fmt(row.v_max, 5)}</td>
+      </tr>
+    `).join("");
+  }
+
+  function renderChart(iterations, target) {
+    const box = $("chartBox");
+    if (!iterations.length) return;
+    const width = 1000;
+    const height = 260;
+    const padL = 58;
+    const padR = 22;
+    const padT = 24;
+    const padB = 38;
+    const values = iterations.map(d => d.h_calc);
+    const minY = Math.min(...values, target) * 0.96;
+    const maxY = Math.max(...values, target) * 1.04;
+    const span = Math.max(maxY - minY, 1e-9);
+    const x = (i) => padL + (iterations.length === 1 ? 0 : i * (width - padL - padR) / (iterations.length - 1));
+    const y = (v) => padT + (maxY - v) * (height - padT - padB) / span;
+    const points = values.map((v, i) => `${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(" ");
+    const yTarget = y(target).toFixed(2);
+    const last = iterations[iterations.length - 1];
+    box.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia">
+        <defs>
+          <linearGradient id="curveGrad" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#f79c0b" />
+            <stop offset="100%" stop-color="#075fe2" />
+          </linearGradient>
+          <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#075fe2" flood-opacity=".18"/>
+          </filter>
+        </defs>
+        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="rgba(8,39,96,.18)" stroke-width="1"/>
+        <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="rgba(8,39,96,.18)" stroke-width="1"/>
+        <line x1="${padL}" y1="${yTarget}" x2="${width - padR}" y2="${yTarget}" stroke="#f79c0b" stroke-width="2" stroke-dasharray="8 8"/>
+        <text x="${padL + 6}" y="${Math.max(16, yTarget - 8)}" fill="#b7791f" font-size="13" font-family="Inter, sans-serif">h<tspan baseline-shift="sub" font-size="10">L,obj</tspan>: ${fmt(target, 4)} m</text>
+        <polyline points="${points}" fill="none" stroke="url(#curveGrad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#softShadow)"/>
+        <circle cx="${x(iterations.length - 1)}" cy="${y(last.h_calc)}" r="7" fill="#075fe2" />
+        <text x="${padL}" y="${height - 10}" fill="#687489" font-size="13" font-family="Inter, sans-serif">Iteración 1</text>
+        <text x="${width - padR}" y="${height - 10}" text-anchor="end" fill="#687489" font-size="13" font-family="Inter, sans-serif">Iteración ${iterations.length}</text>
+      </svg>
+    `;
+  }
+
+  function clearResults() {
+    lastResult = null;
+    $("outTarget").textContent = "—";
+    $("outNu").textContent = "—";
+    $("outMu").textContent = "—";
+    $("outStatus").textContent = "—";
+    $("outStatus").style.color = "var(--deep-blue)";
+    $("outStatusText").textContent = "Ejecuta el cálculo para generar el reporte.";
+    $("tableSubtitle").textContent = "Sin datos calculados todavía.";
+    $("iterationBody").innerHTML = '<tr><td colspan="10" style="text-align:center;color:#687489;">Presiona “Calcular viscosidad dinámica”.</td></tr>';
+    $("chartBox").innerHTML = '<svg viewBox="0 0 1000 260" preserveAspectRatio="none" role="img" aria-label="Gráfica de convergencia vacía"><text x="500" y="138" text-anchor="middle" fill="#687489" font-size="22" font-family="Inter, sans-serif">La curva de convergencia aparecerá aquí</text></svg>';
+    $("csvButton").disabled = true;
+  }
+
+  function downloadCSV() {
+    if (!lastResult || !lastResult.iterations) return;
+    const header = ["iter", "h_L_calc_m", "error_h_L_m", "error_rel", "factor", "nu_m2_s", "mu_Pa_s", "f_prom", "Re_min", "v_max_m_s"];
+    const rows = lastResult.iterations.map(r => [r.iter, r.h_calc, r.error, r.error_rel, r.correction, r.nu, r.mu, r.f_avg, r.re_min, r.v_max]);
+    const csv = [header, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "oilsafe_iteraciones.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function initPyodide() {
+    try {
+      const waitForLoader = () => new Promise((resolve, reject) => {
+        let tries = 0;
+        const timer = setInterval(() => {
+          tries += 1;
+          if (typeof loadPyodide === "function") {
+            clearInterval(timer);
+            resolve();
+          }
+          if (tries > 100) {
+            clearInterval(timer);
+            reject(new Error("No se encontró loadPyodide. Revisa la conexión al CDN."));
+          }
+        }, 100);
+      });
+      await waitForLoader();
+      pyodide = await loadPyodide();
+      pyodide.runPython(document.getElementById("python-code").textContent);
+      $("statusDot").classList.add("ready");
+      $("statusText").textContent = "Motor Python listo en el navegador";
+      $("runButton").disabled = false;
+    } catch (err) {
+      $("statusText").textContent = "No se pudo cargar Pyodide";
+      setMessage(`${err.message}. En GitHub Pages normalmente funciona con conexión a internet.`, "bad");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    updateMixtureInfo();
+    generatePipes(true);
+    updateUnitLabels();
+    $("mixture").addEventListener("change", updateMixtureInfo);
+    $("unitSystem").addEventListener("change", updateUnitLabels);
+    $("pipeCount").addEventListener("change", () => generatePipes(false));
+    $("runButton").addEventListener("click", runCalculation);
+    $("resetButton").addEventListener("click", resetExample);
+    $("csvButton").addEventListener("click", downloadCSV);
+    initPyodide();
+  });
+</script>
 </body>
 </html>
